@@ -1,4 +1,4 @@
 package chess;
 
-public class PieceMovesCalculator {
+public interface PieceMovesCalculator {
 }
