@@ -5,7 +5,6 @@ import java.util.Collection;
 
 public class BishopMovesCalculator {
 
-    @Override
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition position) {
         Collection<ChessMove> validMoves = new ArrayList<>();
 
