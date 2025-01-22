@@ -3,8 +3,9 @@ package chess;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class BishopMovesCalculator {
+public class BishopMovesCalculator implements PieceMovesCalculator{
 
+    @Override
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition position) {
         Collection<ChessMove> validMoves = new ArrayList<>();
 
@@ -35,7 +36,7 @@ public class BishopMovesCalculator {
 
                 } else {
                     if (pieceAtPosition.getTeamColor() != currentPiece.getTeamColor()) {
-                        validMoves.add(new ChessMove(position, newPosition, pieceAtPosition.getPieceType()));
+                        validMoves.add(new ChessMove(position, newPosition, null));
                     }
                     break;
                 }
