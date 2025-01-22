@@ -17,6 +17,7 @@ public class KnightMovesCalculator {
                 {-1, 2},
                 {-1, -2}
         };
+        ChessPiece currentPiece = board.getPiece(position);
         for(int[] direction : directions) {
             int row = position.getRow();
             int col = position.getColumn();
@@ -35,8 +36,8 @@ public class KnightMovesCalculator {
                     validMoves.add(new ChessMove(position, newPosition, null));
 
                 } else {
-                    if (pieceAtPosition.getTeamColor() != board.getPiece(position).getTeamColor()) {
-                        validMoves.add(new ChessMove(position, newPosition, null));
+                    if (pieceAtPosition.getTeamColor() != currentPiece.getTeamColor()) {
+                        validMoves.add(new ChessMove(position, newPosition, pieceAtPosition.getPieceType()));
                     }
                     break;
                 }

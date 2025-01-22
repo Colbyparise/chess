@@ -4,12 +4,12 @@ package chess;
  * A chessboard that can hold and rearrange chess pieces.
  * <p>
  * Note: You can add to this class, but you may not alter
- * signature of the existing methods.
+ * the signature of the existing methods.
  */
 public class ChessBoard {
-    private ChessPiece[][] squares = new Chesspiece[8][8];
+    private ChessPiece[][] squares = new ChessPiece[8][8];
+
     public ChessBoard() {
-        
     }
 
     /**
@@ -19,12 +19,10 @@ public class ChessBoard {
      * @param piece    the piece to add
      */
     public void addPiece(ChessPosition position, ChessPiece piece) {
-
         squares[position.getRow()][position.getColumn()] = piece;
     }
 
-
-     /**
+    /**
      * Gets a chess piece on the chessboard
      *
      * @param position The position to get the piece from
@@ -33,7 +31,6 @@ public class ChessBoard {
      */
     public ChessPiece getPiece(ChessPosition position) {
         return squares[position.getRow()][position.getColumn()];
-
     }
 
     /**

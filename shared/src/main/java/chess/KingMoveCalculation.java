@@ -19,6 +19,8 @@ public class KingMoveCalculation {
                 {1, 1}
 
         };
+
+        ChessPiece currentPiece = board.getPiece(position);
         for(int[] direction : directions) {
             int row = position.getRow();
             int col = position.getColumn();
@@ -37,8 +39,8 @@ public class KingMoveCalculation {
                     validMoves.add(new ChessMove(position, newPosition, null));
 
                 } else {
-                    if (pieceAtPosition.getTeamColor() != board.getPiece(position).getTeamColor()) {
-                        validMoves.add(new ChessMove(position, newPosition, null));
+                    if (pieceAtPosition.getTeamColor() != currentPiece.getTeamColor()) {
+                        validMoves.add(new ChessMove(position, newPosition, pieceAtPosition.getPieceType()));
                     }
                     break;
                 }
@@ -52,4 +54,3 @@ public class KingMoveCalculation {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 }
-
