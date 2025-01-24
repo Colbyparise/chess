@@ -1,7 +1,5 @@
 package chess.PieceMovement;
-
 import chess.*;
-
 import java.util.HashSet;
 
 public class QueenMovesCalculator implements PieceMovesCalculator {

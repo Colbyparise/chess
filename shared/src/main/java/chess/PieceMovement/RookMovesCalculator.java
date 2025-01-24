@@ -1,8 +1,5 @@
 package chess.PieceMovement;
-
-
 import chess.*;
-
 import java.util.HashSet;
 
 public class RookMovesCalculator implements PieceMovesCalculator {

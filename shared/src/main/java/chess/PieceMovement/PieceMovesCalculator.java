@@ -41,14 +41,14 @@ public interface PieceMovesCalculator {
                 ChessPosition targetPos = new ChessPosition(row + direction[1] * step, col + direction[0] * step);
 
                 if (!isPositionValid(targetPos)) {
-                    isBlocked = true; // Out of bounds
+                    isBlocked = true;
                 } else if (board.getPiece(targetPos) == null) {
                     moves.add(new ChessMove(currentPos, targetPos, null));
                 } else if (board.getSquareTeam(targetPos) != currentTeam) {
                     moves.add(new ChessMove(currentPos, targetPos, null));
-                    isBlocked = true; // Capturing move
+                    isBlocked = true;
                 } else {
-                    isBlocked = true; // Friendly piece blocks
+                    isBlocked = true;
                 }
                 step++;
             }
