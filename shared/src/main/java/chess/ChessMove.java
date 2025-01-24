@@ -1,4 +1,5 @@
 package chess;
+import java.util.Objects;
 
 /**
  * Represents moving a chess piece on a chessboard
@@ -6,29 +7,21 @@ package chess;
  * Note: You can add to this class, but you may not alter
  * signature of the existing methods.
  */
-public class ChessMove {
-    private final ChessPosition startPosition;
-    private final ChessPosition endPosition;
-    private final ChessPiece.PieceType promotionPiece;
-
-    public ChessMove(ChessPosition startPosition, ChessPosition endPosition,
-                     ChessPiece.PieceType promotionPiece) {
-        this.startPosition = startPosition;
-        this.endPosition = endPosition;
-        this.promotionPiece = promotionPiece;
-    }
+public record ChessMove(ChessPosition startPosition, ChessPosition endPosition, ChessPiece.PieceType promotionPiece) {
 
     /**
      * @return ChessPosition of starting location
      */
-    public ChessPosition getStartPosition() {
+    @Override
+    public ChessPosition startPosition() {
         return startPosition;
     }
 
     /**
      * @return ChessPosition of ending location
      */
-    public ChessPosition getEndPosition() {
+    @Override
+    public ChessPosition endPosition() {
         return endPosition;
     }
 
@@ -38,7 +31,31 @@ public class ChessMove {
      *
      * @return Type of piece to promote a pawn to, or null if no promotion
      */
-    public ChessPiece.PieceType getPromotionPiece() {
+    @Override
+    public ChessPiece.PieceType promotionPiece() {
         return promotionPiece;
     }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "ChessMove{startPosition=%s, endPosition=%s, promotionPiece=%s}",
+                startPosition, endPosition, promotionPiece
+        );
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        ChessMove Move = (ChessMove) obj;
+        return Objects.equals(startPosition, Move.startPosition)
+                && Objects.equals(endPosition, Move.endPosition)
+                && promotionPiece == Move.promotionPiece;
+    }
+
 }
