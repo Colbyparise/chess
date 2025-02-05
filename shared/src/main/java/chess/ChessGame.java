@@ -2,7 +2,7 @@ package chess;
 
 import java.util.Collection;
 import java.util.HashSet;
-
+import java.util.Objects;
 /**
  * For a class that can manage a chess game, making moves on a board
  * <p>
@@ -13,7 +13,6 @@ public class ChessGame {
     private TeamColor teamTurn;
     private ChessBoard board;
     private boolean gameOver;
-    private Game_State gameState;
 
     public ChessGame() {
         board = new ChessBoard();
@@ -42,10 +41,6 @@ public class ChessGame {
     public enum TeamColor {
         WHITE,
         BLACK
-    }
-
-    public enum Game_State {
-        Active, Check, Checkmate, Stalemate, draw, resignation
     }
 
     /**
@@ -87,7 +82,25 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        boolean teamTurn = getTeamTurn() == board.getSquareTeam(move.getStartPosition());
+        Collection<ChessMove> moves = validMoves(move.getStartPosition());
+        if (moves == null) {
+            throw new InvalidMoveException("No valid moves");
+        }
+        boolean isValidMove = moves.contains(move);
+        if (isValidMove && teamTurn) {
+            ChessPiece pieceToMove = board.getPiece(move.getStartPosition());
+            if (move.getPromotionPiece() != null) {
+                pieceToMove = new ChessPiece(pieceToMove.getTeamColor(), move.getPromotionPiece());
+
+            }
+            board.addPiece(move.getStartPosition(), null);
+            board.addPiece(move.getEndPosition(), pieceToMove);
+            setTeamTurn(getTeamTurn() == TeamColor.WHITE ? TeamColor.BLACK : TeamColor.WHITE);
+        }
+        else {
+            throw new InvalidMoveException(String.format("Valid move: %b Your Turn: %b", isValidMove, teamTurn));
+        }
     }
 
     /**
@@ -97,7 +110,10 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        ChessPosition king = null;
+        for (int row=1; row <= 8 && king == null; row++) {
+            for (int column = 1; column <= 8 && king == null; column++);
+        }
     }
 
     /**
