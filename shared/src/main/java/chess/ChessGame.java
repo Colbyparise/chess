@@ -112,8 +112,30 @@ public class ChessGame {
     public boolean isInCheck(TeamColor teamColor) {
         ChessPosition king = null;
         for (int row=1; row <= 8 && king == null; row++) {
-            for (int column = 1; column <= 8 && king == null; column++);
+            for (int column = 1; column <= 8 && king == null; column++) {
+                ChessPiece piece = board.getPiece(new ChessPosition(row, column));
+                if (piece == null) {
+                    continue;
+                }
+                else if (piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    king = new ChessPosition(row, column);
+                }
+            }
         }
+        for (int row = 1; row <= 8; row++) {
+            for (int column = 1; column <= 8; column++) {
+                ChessPiece piece = board.getPiece(new ChessPosition(row, column));
+                if (piece == null || piece.getTeamColor() == teamColor) {
+                    continue;
+                }
+                for (ChessMove enemy : piece.pieceMoves(board, new ChessPosition(row, column))) {
+                    if (enemy.getEndPosition().equals(king)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
