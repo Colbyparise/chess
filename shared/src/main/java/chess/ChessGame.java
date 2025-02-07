@@ -197,5 +197,18 @@ public class ChessGame {
 
     public boolean getGameOver() {
         return gameOver;
+
+    }
+    @Override
+    public String toString() {
+        return "ChessGame{" + "teamTurn=" + teamTurn + ", board=" + board + '}';
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ChessGame chessGame = (ChessGame) obj;
+        return teamTurn == chessGame.teamTurn && Objects.equals(board, chessGame.board);
     }
 }
