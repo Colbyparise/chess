@@ -16,6 +16,7 @@ public class ChessGame {
 
     public ChessGame() {
         chessBoard = new ChessBoard();
+        chessBoard.resetBoard();
         setTeamTurn(TeamColor.WHITE);
     }
 
@@ -86,24 +87,25 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        boolean teamTurn = getTeamTurn() == chessBoard.getSquareTeam(move.getStartPosition());
-        Collection<ChessMove> moves = validMoves(move.getStartPosition());
+        ChessPiece moves = chessBoard.getPiece(move.getStartPosition());
         if (moves == null) {
             throw new InvalidMoveException("Invalid move");
         }
-        boolean isValidMove = moves.contains(move);
-        if (isValidMove && teamTurn) {
-            ChessPiece movePiece = chessBoard.getPiece(move.getStartPosition());
-            if (move.getPromotionPiece() != null) {
-                movePiece = new ChessPiece(movePiece.getTeamColor(), move.getPromotionPiece());
-            }
-            chessBoard.addPiece(move.getStartPosition(), null);
-            chessBoard.addPiece(move.getEndPosition(), movePiece);
-
-            setTeamTurn(getTeamTurn() == TeamColor.WHITE ? TeamColor.BLACK : TeamColor.WHITE);
-        } else {
-            throw new InvalidMoveException(String.format("Valid move: %b Your Turn: %b", isValidMove, teamTurn));
+        Collection<ChessMove> possibleMoves = validMoves(move.getStartPosition());
+        if (possibleMoves == null || !possibleMoves.contains(move)) {
+            throw new InvalidMoveException("Invalid move: not legal");
         }
+        if (move.getPromotionPiece() != null) {
+            moves = new ChessPiece(moves.getTeamColor(), move.getPromotionPiece());
+        }
+
+        if (move.getPromotionPiece() != null) {
+            moves = new ChessPiece(moves.getTeamColor(), move.getPromotionPiece());
+        }
+        chessBoard.addPiece(move.getStartPosition(), null);
+        chessBoard.addPiece(move.getEndPosition(), moves);
+
+        setTeamTurn(getTeamTurn() == TeamColor.WHITE ? TeamColor.BLACK : TeamColor.WHITE);
     }
 
     /**
@@ -160,8 +162,10 @@ public class ChessGame {
             for (int column = 1; column <= 8; column++) {
                 ChessPosition position = new ChessPosition(row, column);
                 ChessPiece piece = chessBoard.getPiece(position);
+                Collection<ChessMove> moves;
+
                 if (piece != null && teamColor == piece.getTeamColor()) {
-                    Collection<ChessMove> moves = validMoves(position);
+                    moves = validMoves(position);
                     if (moves != null && !moves.isEmpty()) {
                         return false;
                     }
