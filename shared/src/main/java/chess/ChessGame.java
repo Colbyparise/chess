@@ -12,10 +12,11 @@ import java.util.Objects;
 public class ChessGame {
     private TeamColor teamColor;
     private ChessBoard chessBoard;
-    private boolean endGame;
+    private boolean gameOver;
 
     public ChessGame() {
         chessBoard = new ChessBoard();
+        chessBoard.resetBoard();
         setTeamTurn(TeamColor.WHITE);
     }
 
@@ -112,11 +113,14 @@ public class ChessGame {
      * @return True if the specified team is in check
      */
     public boolean isInCheck(TeamColor teamColor) {
-        ChessPosition king = null;
+        ChessPosition king = null; //get kings location
         for (int row=1; row <= 8 && king == null; row++) {
             for (int column = 1; column <= 8 && king == null; column++) {
                 ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, column));
-                if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                if (piece == null) {
+                    continue;
+                }
+                if (piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
                     king = new ChessPosition(row, column);
                 }
             }
@@ -155,16 +159,20 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        for (int row = 1; row <= 8; row++) {
-            for (int column = 1; column <= 8; column++) {
-                ChessPosition position = new ChessPosition(row, column);
-                ChessPiece piece = chessBoard.getPiece(position);
-                Collection<ChessMove> moves;
+        if (isInCheck(teamColor)) {
+            return false;
+        }
 
-                if (piece != null && teamColor == piece.getTeamColor()) {
-                    moves = validMoves(position);
-                    if (moves != null && !moves.isEmpty()) {
-                        return false;
+        for (int row = 1; row <= 8; row++) {
+                for (int column = 1; column <= 8; column++) {
+                    ChessPosition position = new ChessPosition(row, column);
+                    ChessPiece piece = chessBoard.getPiece(position);
+                    Collection<ChessMove> moves;
+
+                    if (piece != null && teamColor == piece.getTeamColor()) {
+                        moves = validMoves(position);
+                        if (moves != null && !moves.isEmpty()) {
+                            return false;
                     }
                 }
             }
@@ -192,11 +200,11 @@ public class ChessGame {
     }
 
     public void setGameOver(boolean gameOver) {
-        this.endGame = gameOver;
+        this.gameOver = gameOver;
     }
 
     public boolean getGameOver() {
-        return endGame;
+        return gameOver;
 
     }
     @Override
