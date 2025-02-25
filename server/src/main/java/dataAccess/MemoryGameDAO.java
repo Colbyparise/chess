@@ -1,6 +1,6 @@
 package dataAccess;
 
-import users.GameData;
+import model.GameData;
 
 import java.util.HashSet;
 
