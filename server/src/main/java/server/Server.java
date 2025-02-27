@@ -4,44 +4,35 @@ import dataAccess.*;
 import org.eclipse.jetty.websocket.api.Session;
 import service.GameService;
 import service.UserService;
-import static spark.*;
+import spark.*;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
 
-    UserDAO userDAO;
-    AuthDAO authDAO;
-    GameDAO gameDAO;
+    static UserService userService;
+    static GameService gameService;
 
-    static UserService userHandler;
-    static GameService gameHandler;
+    UserHandler userHandler;
+    GameHandler gameHandler;
+
     static ConcurrentHashMap<Session, Integer> gameSessions = new ConcurrentHashMap<>();
 
-    public Server() {
-        userDAO = new SQLUserDAO();
-        authDAO = new SQLAuthDAO();
-        gameDAO = new SQLGameDAO();
+    public Server(UserService userService, GameService gameService) {
+        this.userService = userService;
+        this.gameService = gameService;
 
-        userService = new UserService(userDAO, authDAO);
-        gameService = new UserHandler(userService);
         userHandler = new UserHandler(userService);
-        gameHandler = new GameHandler() (gameService);
-
-        try {
-            DatabaseManager.createDatabase();
-        } catch (DataAccessException exception) {
-            throw new RuntimeException(exception);
-        }
+        gameHandler = new GameHandler(gameService);
     }
 
-    }
     public int run(int desiredPort) {
         Spark.port(desiredPort);
 
         Spark.staticFiles.location("web");
 
         Spark.webSocket("/connect", WebsocketHandler.class);
+
         Spark.delete("/db", this::clear);
         Spark.post("/user", userHandler::register);
         Spark.post("/session", userHandler::login);
@@ -65,31 +56,19 @@ public class Server {
         Spark.awaitStop();
     }
 
-    public void clearDB() {
-        userService.clear();
-        gameService.clear();
-    }
-
-    private Object clear(Request request, Response response) {
-        clearDB();
-
-        response.status(200);
-        return "{}";
-    }
-
     private void badRequestExceptionHandler(BadRequestException exception, Request request, Response response) {
         response.status(400);
         response.body("{ \"message\": \"Error: bad request\" }");
     }
 
-    private void unauthorizedExceptionHandler(UnauthorizedException ex, Request req, Response resp) {
-        resp.status(401);
-        resp.body("{ \"message\": \"Error: unauthorized\" }");
+    private void unauthorizedExceptionHandler(UnauthorizedException exception, Request request, Response response) {
+        response.status(401);
+        response.body("{ \"message\": \"Error: unauthorized\" }");
     }
 
-    private void genericExceptionHandler(Exception ex, Request req, Response resp) {
-        resp.status(500);
-        resp.body("{ \"message\": \"Error: %s\" }".formatted(ex.getMessage()));
+    private void genericExceptionHandler(Exception exception, Request request, Response response) {
+        response.status(500);
+        response.body("{ \"message\": \"Error: %s\" }".formatted(exception.getMessage()));
     }
 
-
+}
