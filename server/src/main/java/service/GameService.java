@@ -12,8 +12,13 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
-    GameDAO gameDAO;
-    AuthDAO authDAO;
+    private GameDAO gameDAO;
+    private AuthDAO authDAO;
+
+    public GameService() {
+        this.gameDAO = new MemoryGameDAO();  // Use default in-memory DAO
+        this.authDAO = new MemoryAuthDAO();
+    }
 
     public GameService(GameDAO gameDAO, AuthDAO authDAO) {
         this.gameDAO = gameDAO;

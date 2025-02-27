@@ -34,7 +34,7 @@ public class MemoryUserDAO implements UserDAO {
     }
 
     @Override
-    public boolean authentucateUser(String username, String password) throws DataAccessException {
+    public boolean authenticateUser(String username, String password) throws DataAccessException {
         boolean userExists = false;
         for (UserData user : db) {
             if (user.username().equals(username)) {

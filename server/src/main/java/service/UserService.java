@@ -9,13 +9,19 @@ import model.UserData;
 import java.util.UUID;
 
 public class UserService {
-    UserDAO userDAO;
-    AuthDAO authDAO;
+    private UserDAO userDAO;
+    private AuthDAO authDAO;
+
+    public UserService() {
+        this.userDAO = new MemoryUserDAO();  // Use default in-memory DAO
+        this.authDAO = new MemoryAuthDAO();
+    }
 
     public UserService(UserDAO userDAO, AuthDAO authDAO) {
-        this.userDAO = userDAO;
-        this.authDAO = authDAO;
+        this.userDAO = new MemoryUserDAO();
+        this.authDAO = new MemoryAuthDAO();
     }
+
 
     public AuthData createUser(UserData userData) throws BadRequestException {
 

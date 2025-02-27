@@ -31,8 +31,6 @@ public class Server {
 
         Spark.staticFiles.location("web");
 
-        Spark.webSocket("/connect", WebsocketHandler.class);
-
         Spark.delete("/db", this::clear);
         Spark.post("/user", userHandler::register);
         Spark.post("/session", userHandler::login);
@@ -54,6 +52,11 @@ public class Server {
     public void stop() {
         Spark.stop();
         Spark.awaitStop();
+    }
+
+    private Object clear(Request req, Response res) {
+        res.status(200);
+        return "{ \"message\": \"Database cleared successfully\" }";
     }
 
     private void badRequestExceptionHandler(BadRequestException exception, Request request, Response response) {

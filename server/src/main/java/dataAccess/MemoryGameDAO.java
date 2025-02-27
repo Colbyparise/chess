@@ -8,7 +8,7 @@ public class MemoryGameDAO implements GameDAO {
     HashSet<GameData> db;
 
     public MemoryGameDAO() {
-        db = HashSet.newHashSet(16);
+        db = new HashSet<>(16);
     }
 
     @Override
@@ -22,7 +22,7 @@ public class MemoryGameDAO implements GameDAO {
     }
 
     @Override
-    public GameData getDame(int gameID) throws DataAccessException {
+    public GameData getGame(int gameID) throws DataAccessException {
         for (GameData game : db) {
             if (game.gameID() == gameID) {
                 return game;
@@ -32,7 +32,7 @@ public class MemoryGameDAO implements GameDAO {
     }
 
     @Override
-    public boolean gameFound(int gameID) {
+    public boolean gameExists(int gameID) {
         for (GameData game : db) {
             if (game.gameID() == gameID) {
                 return true;
@@ -44,7 +44,7 @@ public class MemoryGameDAO implements GameDAO {
     @Override
     public void updateGame(GameData game) {
         try {
-            db.remove(getGAme(game.gameID()));
+            db.remove(getGame(game.gameID()));
             db.add(game);
         } catch (DataAccessException exception) {
             db.add(game);
@@ -53,6 +53,6 @@ public class MemoryGameDAO implements GameDAO {
 
     @Override
     public void clear() {
-        db = HashSet.newHashSet(16);
+        db.clear();
     }
 }
