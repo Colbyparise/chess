@@ -54,8 +54,8 @@ public class Server {
         Spark.awaitStop();
     }
 
-    private Object clear(Request req, Response res) {
-        res.status(200);
+    private Object clear(Request request, Response response) {
+        response.status(200);
         return "{ \"message\": \"Database cleared successfully\" }";
     }
 

@@ -9,8 +9,8 @@ import model.UserData;
 import java.util.UUID;
 
 public class UserService {
-    private UserDAO userDAO;
-    private AuthDAO authDAO;
+    private final UserDAO userDAO;
+    private final AuthDAO authDAO;
 
     public UserService() {
         this.userDAO = new MemoryUserDAO();  // Use default in-memory DAO

@@ -12,10 +12,10 @@ public class MemoryUserDAO implements UserDAO {
     }
 
     @Override
-    public UserData getUser(String username) throws DataAccessException {
+    public void getUser(String username) throws DataAccessException {
         for (UserData user : db) {
             if (user.username().equals(username)) {
-                return user;
+                return;
             }
         }
         throw new DataAccessException("Username not found: " +username);
@@ -30,7 +30,7 @@ public class MemoryUserDAO implements UserDAO {
             db.add(user);
             return;
         }
-        throw new DataAccessException("Username in use: " +user.username());
+        throw new DataAccessException("Username already exists: " + user.username());
     }
 
     @Override
@@ -49,7 +49,7 @@ public class MemoryUserDAO implements UserDAO {
             return false;
         }
         else {
-            throw new DataAccessException("USer does not exist: " +username);
+            throw new DataAccessException("User does not exist: " + username);
         }
     }
 
