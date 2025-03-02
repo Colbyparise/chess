@@ -13,7 +13,7 @@ public class UserService {
     private final AuthDAO authDAO;
 
     public UserService() {
-        this.userDAO = new MemoryUserDAO();  // Use default in-memory DAO
+        this.userDAO = new MemoryUserDAO();
         this.authDAO = new MemoryAuthDAO();
     }
 

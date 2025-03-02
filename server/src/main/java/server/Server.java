@@ -1,12 +1,10 @@
 package server;
 
 import dataAccess.*;
-import org.eclipse.jetty.websocket.api.Session;
 import service.GameService;
 import service.UserService;
 import spark.*;
 
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
 
@@ -16,11 +14,10 @@ public class Server {
     UserHandler userHandler;
     GameHandler gameHandler;
 
-    static ConcurrentHashMap<Session, Integer> gameSessions = new ConcurrentHashMap<>();
 
     public Server(UserService userService, GameService gameService) {
-        this.userService = userService;
-        this.gameService = gameService;
+        Server.userService = userService;
+        Server.gameService = gameService;
 
         userHandler = new UserHandler(userService);
         gameHandler = new GameHandler(gameService);
@@ -29,7 +26,12 @@ public class Server {
     public int run(int desiredPort) {
         Spark.port(desiredPort);
 
-        Spark.staticFiles.location("web");
+        Spark.staticFiles.location("/web");
+
+        Spark.get("/", (_, res) -> {
+            res.redirect("/index.html");
+            return null;
+        });
 
         Spark.delete("/db", this::clear);
         Spark.post("/user", userHandler::register);
@@ -43,7 +45,6 @@ public class Server {
         Spark.exception(BadRequestException.class, this::badRequestExceptionHandler);
         Spark.exception(UnauthorizedException.class, this::unauthorizedExceptionHandler);
         Spark.exception(Exception.class, this::genericExceptionHandler);
-
 
         Spark.awaitInitialization();
         return Spark.port();
@@ -73,5 +74,4 @@ public class Server {
         response.status(500);
         response.body("{ \"message\": \"Error: %s\" }".formatted(exception.getMessage()));
     }
-
 }
