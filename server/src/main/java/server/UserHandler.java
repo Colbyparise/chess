@@ -1,4 +1,5 @@
 package server;
+
 import com.google.gson.Gson;
 import dataAccess.BadRequestException;
 import dataAccess.UnauthorizedException;
@@ -7,7 +8,6 @@ import model.UserData;
 import service.UserService;
 import spark.Request;
 import spark.Response;
-
 
 public class UserHandler {
 
@@ -37,7 +37,6 @@ public class UserHandler {
 
     public Object login(Request req, Response resp) throws UnauthorizedException, BadRequestException {
         UserData userData = new Gson().fromJson(req.body(), UserData.class);
-
         AuthData authData = userService.loginUser(userData);
 
         resp.status(200);

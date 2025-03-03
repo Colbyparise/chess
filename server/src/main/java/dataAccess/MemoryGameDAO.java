@@ -5,10 +5,11 @@ import model.GameData;
 import java.util.HashSet;
 
 public class MemoryGameDAO implements GameDAO {
+
     HashSet<GameData> db;
 
     public MemoryGameDAO() {
-        db = new HashSet<>(16);
+        db = HashSet.newHashSet(16);
     }
 
     @Override
@@ -28,7 +29,7 @@ public class MemoryGameDAO implements GameDAO {
                 return game;
             }
         }
-        throw new DataAccessException(gameID + "was not found");
+        throw new DataAccessException("Game not found, id: " +gameID);
     }
 
     @Override
@@ -46,7 +47,7 @@ public class MemoryGameDAO implements GameDAO {
         try {
             db.remove(getGame(game.gameID()));
             db.add(game);
-        } catch (DataAccessException exception) {
+        } catch (DataAccessException e) {
             db.add(game);
         }
     }

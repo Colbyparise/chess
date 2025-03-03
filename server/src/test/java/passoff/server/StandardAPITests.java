@@ -4,8 +4,6 @@ import chess.ChessGame;
 import org.junit.jupiter.api.*;
 import passoff.model.*;
 import server.Server;
-import service.GameService;
-import service.UserService;
 
 import java.net.HttpURLConnection;
 import java.util.Arrays;
@@ -33,9 +31,8 @@ public class StandardAPITests {
 
     @BeforeAll
     public static void init() {
-        UserService userService = new UserService();
-        GameService gameService = new GameService();
-        server = new Server(userService, gameService);
+
+        server = new Server();
         var port = server.run(0);
         System.out.println("Started test HTTP server on " + port);
 

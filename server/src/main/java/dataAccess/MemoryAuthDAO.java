@@ -1,44 +1,36 @@
 package dataAccess;
-
 import model.AuthData;
-
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MemoryAuthDAO implements AuthDAO {
 
-    HashSet<AuthData> db;
+    private final ConcurrentHashMap<String, AuthData> db;
 
     public MemoryAuthDAO() {
-        db = HashSet.newHashSet(16);
+        this.db = new ConcurrentHashMap<>();
     }
 
     @Override
     public void addAuth(AuthData authData) {
-        db.add(authData);
+        db.putIfAbsent(authData.authToken(), authData);
     }
 
     @Override
     public void deleteAuth(String authToken) {
-        for (AuthData authData : db) {
-            if (authData.authToken().equals(authToken)) {
-                db.remove(authData);
-                break;
-            }
-        }
+        db.remove(authToken);
     }
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        for (AuthData authData : db) {
-            if (authData.authToken().equals(authToken)) {
-                return authData;
-            }
+        AuthData authData = db.get(authToken);
+        if (authData == null) {
+            throw new DataAccessException("Auth Token does not exist: " + authToken);
         }
-        throw new DataAccessException("Auth Token does not exist: " + authToken);
+        return authData;
     }
 
     @Override
     public void clear() {
-        db = HashSet.newHashSet(16);
+        db.clear();
     }
 }

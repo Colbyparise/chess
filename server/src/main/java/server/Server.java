@@ -5,33 +5,37 @@ import service.GameService;
 import service.UserService;
 import spark.*;
 
-
 public class Server {
 
-    static UserService userService;
-    static GameService gameService;
+
+    UserDAO userDAO;
+    AuthDAO authDAO;
+    GameDAO gameDAO;
+
+    UserService userService;
+    GameService gameService;
 
     UserHandler userHandler;
     GameHandler gameHandler;
 
+    public Server() {
 
-    public Server(UserService userService, GameService gameService) {
-        Server.userService = userService;
-        Server.gameService = gameService;
+        userDAO = new MemoryUserDAO();
+        authDAO = new MemoryAuthDAO();
+        gameDAO = new MemoryGameDAO();
+
+        userService = new UserService(userDAO, authDAO);
+        gameService = new GameService(gameDAO, authDAO);
 
         userHandler = new UserHandler(userService);
         gameHandler = new GameHandler(gameService);
+
     }
 
     public int run(int desiredPort) {
         Spark.port(desiredPort);
 
-        Spark.staticFiles.location("/web");
-
-        Spark.get("/", (_, res) -> {
-            res.redirect("/index.html");
-            return null;
-        });
+        Spark.staticFiles.location("web");
 
         Spark.delete("/db", this::clear);
         Spark.post("/user", userHandler::register);
@@ -46,6 +50,7 @@ public class Server {
         Spark.exception(UnauthorizedException.class, this::unauthorizedExceptionHandler);
         Spark.exception(Exception.class, this::genericExceptionHandler);
 
+
         Spark.awaitInitialization();
         return Spark.port();
     }
@@ -55,23 +60,28 @@ public class Server {
         Spark.awaitStop();
     }
 
-    private Object clear(Request request, Response response) {
-        response.status(200);
-        return "{ \"message\": \"Database cleared successfully\" }";
+    private Object clear(Request req, Response resp) {
+
+        userService.clear();
+        gameService.clear();
+
+        resp.status(200);
+        return "{}";
     }
 
-    private void badRequestExceptionHandler(BadRequestException exception, Request request, Response response) {
-        response.status(400);
-        response.body("{ \"message\": \"Error: bad request\" }");
+    private void badRequestExceptionHandler(BadRequestException ex, Request req, Response resp) {
+        resp.status(400);
+        resp.body("{ \"message\": \"Error: bad request\" }");
     }
 
-    private void unauthorizedExceptionHandler(UnauthorizedException exception, Request request, Response response) {
-        response.status(401);
-        response.body("{ \"message\": \"Error: unauthorized\" }");
+    private void unauthorizedExceptionHandler(UnauthorizedException ex, Request req, Response resp) {
+        resp.status(401);
+        resp.body("{ \"message\": \"Error: unauthorized\" }");
     }
 
-    private void genericExceptionHandler(Exception exception, Request request, Response response) {
-        response.status(500);
-        response.body("{ \"message\": \"Error: %s\" }".formatted(exception.getMessage()));
+    private void genericExceptionHandler(Exception ex, Request req, Response resp) {
+        resp.status(500);
+        resp.body("{ \"message\": \"Error: %s\" }".formatted(ex.getMessage()));
     }
+
 }
