@@ -1,10 +1,10 @@
-package passofftests.chess.piece;
+package passoff.chess.piece;
 
 import chess.ChessMove;
 import chess.ChessPiece;
 import chess.ChessPosition;
 import org.junit.jupiter.api.Test;
-import passofftests.chess.TestUtilities;
+import passoff.chess.TestUtilities;
 
 import java.util.ArrayList;
 
