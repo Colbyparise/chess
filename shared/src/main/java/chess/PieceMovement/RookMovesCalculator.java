@@ -1,13 +1,13 @@
-package chess.PieceMovement;
+package chess.piecemovement;
 import chess.*;
 import java.util.HashSet;
 
-public class RookMovesCalculator implements PieceMovesCalculator {
+public class    RookMovesCalculator implements PieceMovesCalculator {
 
     //possible rook moves
     public static HashSet<ChessMove> getMoves(ChessBoard board, ChessPosition position) {
-        int X = position.getColumn();
-        int Y = position.getRow();
+        int x = position.getColumn();
+        int y = position.getRow();
         int[][] directions = {
                 {0, 1},
                 {1, 0},
@@ -16,6 +16,6 @@ public class RookMovesCalculator implements PieceMovesCalculator {
         };
         ChessGame.TeamColor team = board.getSquareTeam(position);
 
-        return PieceMovesCalculator.DirectionalMoves(board, position, directions, Y, X, team);
+        return PieceMovesCalculator.directionalmoves(board, position, directions, y, x, team);
     }
 }

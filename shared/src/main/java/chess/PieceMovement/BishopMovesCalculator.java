@@ -1,4 +1,4 @@
-package chess.PieceMovement;
+package chess.piecemovement;
 
 import chess.*;
 
@@ -20,7 +20,7 @@ public class BishopMovesCalculator implements PieceMovesCalculator {
         };
 
         ChessGame.TeamColor team = board.getSquareTeam(position); //get color
-        return PieceMovesCalculator.DirectionalMoves(board, position, directions, y, x, team); //get moves
+        return PieceMovesCalculator.directionalmoves(board, position, directions, y, x, team); //get moves
     }
 }
 

@@ -1,4 +1,4 @@
-package chess.PieceMovement;
+package chess.piecemovement;
 import chess.*;
 import java.util.HashSet;
 
@@ -14,9 +14,9 @@ public interface PieceMovesCalculator {
         return (row >= 1 && row <= 8) && (col >= 1 && col <= 8);
     }
 
-    static HashSet<ChessMove> RelativeMoves(ChessPosition currentPos, int[][] relativeMoves, ChessBoard board) {
+    static HashSet<ChessMove> relativemoves(ChessPosition currentPos,
+                                            int[][] relativeMoves, ChessBoard board) {
         HashSet<ChessMove> possibleMoves = new HashSet<>(8);
-
         int currentColumn = currentPos.getColumn();
         int currentRow = currentPos.getRow();
         ChessGame.TeamColor currentTeam = board.getSquareTeam(currentPos);
@@ -30,7 +30,8 @@ public interface PieceMovesCalculator {
         return possibleMoves;
     }
 
-    static HashSet<ChessMove> DirectionalMoves(ChessBoard board, ChessPosition currentPos, int[][] directions, int row, int col, ChessGame.TeamColor currentTeam) {
+    static HashSet<ChessMove> directionalmoves(ChessBoard board, ChessPosition currentPos,
+                                               int[][] directions, int row, int col, ChessGame.TeamColor currentTeam) {
         HashSet<ChessMove> moves = new HashSet<>(27); // Estimated max moves for sliding pieces
 
         for (int[] direction : directions) {

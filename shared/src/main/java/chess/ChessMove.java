@@ -52,10 +52,10 @@ public record ChessMove(ChessPosition startPosition, ChessPosition endPosition, 
         if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-        ChessMove Move = (ChessMove) obj;
-        return Objects.equals(startPosition, Move.startPosition)
-                && Objects.equals(endPosition, Move.endPosition)
-                && promotionPiece == Move.promotionPiece;
+        ChessMove move = (ChessMove) obj;
+        return Objects.equals(startPosition, move.startPosition)
+                && Objects.equals(endPosition, move.endPosition)
+                && promotionPiece == move.promotionPiece;
     }
 
 }

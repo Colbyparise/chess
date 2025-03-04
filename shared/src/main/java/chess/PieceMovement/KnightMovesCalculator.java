@@ -1,4 +1,4 @@
-package chess.PieceMovement;
+package chess.piecemovement;
 import chess.*;
 import java.util.HashSet;
 
@@ -17,6 +17,6 @@ public class KnightMovesCalculator implements PieceMovesCalculator {
                 {-1, 2},
                 {-1, -2}
         };
-        return PieceMovesCalculator.RelativeMoves(position, directions, board);
+        return PieceMovesCalculator.relativemoves(position, directions, board);
     }
 }

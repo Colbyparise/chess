@@ -1,12 +1,12 @@
-package chess.PieceMovement;
+package chess.piecemovement;
 import chess.*;
 import java.util.HashSet;
 
 public class QueenMovesCalculator implements PieceMovesCalculator {
 
     public static HashSet<ChessMove> getMoves(ChessBoard board, ChessPosition position) {
-        int X = position.getColumn();
-        int Y = position.getRow();
+        int x = position.getColumn();
+        int y = position.getRow();
 
         //possible queen moves
         int[][] directions = {
@@ -20,6 +20,6 @@ public class QueenMovesCalculator implements PieceMovesCalculator {
                 {1, 1}
         };
         ChessGame.TeamColor team = board.getSquareTeam(position);
-        return PieceMovesCalculator.DirectionalMoves(board, position, directions, Y, X, team);
+        return PieceMovesCalculator.directionalmoves(board, position, directions, y, x, team);
     }
 }
