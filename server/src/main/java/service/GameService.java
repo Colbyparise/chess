@@ -71,24 +71,17 @@ public class GameService {
             throw new BadRequestException(e.getMessage());
         }
 
-        if (color == null || color.isBlank()) {
-            throw new BadRequestException("Team color cannot be null or empty");
-        }
-
-        if (!color.equals("WHITE") && !color.equals("BLACK")) {
-            throw new BadRequestException("%s is not a valid team color".formatted(color));
-        }
-
         String whiteUser = gameData.whiteUsername();
         String blackUser = gameData.blackUsername();
 
         if (Objects.equals(color, "WHITE")) {
             if (whiteUser != null) return false; // Spot taken
             else whiteUser = authData.username();
-        } else {
+        } else if (Objects.equals(color, "BLACK")) {
             if (blackUser != null) return false; // Spot taken
             else blackUser = authData.username();
-        }
+        } else if (color != null) throw new BadRequestException("%s is not a valid team color".formatted(color));
+
         gameDAO.updateGame(new GameData(gameID, whiteUser, blackUser, gameData.gameName(), gameData.game()));
         return true;
     }
