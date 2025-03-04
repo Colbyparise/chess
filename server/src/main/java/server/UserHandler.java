@@ -1,8 +1,8 @@
 package server;
 
 import com.google.gson.Gson;
-import dataAccess.BadRequestException;
-import dataAccess.UnauthorizedException;
+import dataaccess.BadRequestException;
+import dataaccess.UnauthorizedException;
 import model.AuthData;
 import model.UserData;
 import service.UserService;

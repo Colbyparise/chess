@@ -1,6 +1,6 @@
 package server;
 
-import dataAccess.*;
+import dataaccess.*;
 import service.GameService;
 import service.UserService;
 import spark.*;
