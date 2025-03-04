@@ -1,63 +1,44 @@
 package dataAccess;
-
 import model.UserData;
-
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MemoryUserDAO implements UserDAO {
 
-    private HashSet<UserData> db;
+    private final Map<String, UserData> db;
 
     public MemoryUserDAO() {
-        db = HashSet.newHashSet(16);
+        db = new HashMap<>();
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        for (UserData user : db) {
-            if (user.username().equals(username)) {
-                return user;
-            }
+        UserData user = db.get(username);
+        if (user == null) {
+            throw new DataAccessException("User not found: " + username);
         }
-        throw new DataAccessException("User not found: " + username);
+        return user;
     }
 
     @Override
     public void createUser(UserData user) throws DataAccessException {
-        try {
-            getUser(user.username());
+        if (db.containsKey(user.username())) {
+            throw new DataAccessException("User already exists: " + user.username());
         }
-        catch (DataAccessException e) {
-            db.add(user);
-            return;
-        }
-
-        throw new DataAccessException("User already exists: " + user.username());
+        db.put(user.username(), user);
     }
-
 
     @Override
     public boolean authenticateUser(String username, String password) throws DataAccessException {
-        boolean userExists = false;
-        for (UserData user : db) {
-            if (user.username().equals(username)) {
-                userExists = true;
-            }
-            if (user.username().equals(username) &&
-                    user.password().equals(password)) {
-                return true;
-            }
-        }
-        if (userExists) {
-            return false;
-        }
-        else {
+        UserData user = db.get(username);
+        if (user == null) {
             throw new DataAccessException("User does not exist: " + username);
         }
+        return user.password().equals(password);
     }
 
     @Override
     public void clear() {
-        db = HashSet.newHashSet(16);
+        db.clear();
     }
 }

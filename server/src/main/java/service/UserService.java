@@ -8,8 +8,8 @@ import java.util.UUID;
 
 public class UserService {
 
-    UserDAO userDAO;
-    AuthDAO authDAO;
+    private final UserDAO userDAO;
+    private final AuthDAO authDAO;
 
     public UserService(UserDAO userDAO, AuthDAO authDAO) {
         this.userDAO = userDAO;
@@ -17,12 +17,12 @@ public class UserService {
     }
 
     public AuthData createUser(UserData userData) throws BadRequestException {
-
         try {
             userDAO.createUser(userData);
         } catch (DataAccessException e) {
-            throw new BadRequestException(e.getMessage());
+            throw new BadRequestException("User creation failed: " + e.getMessage());
         }
+
         String authToken = UUID.randomUUID().toString();
         AuthData authData = new AuthData(userData.username(), authToken);
         authDAO.addAuth(authData);
@@ -31,22 +31,22 @@ public class UserService {
     }
 
     public AuthData loginUser(UserData userData) throws UnauthorizedException, BadRequestException {
-        boolean userAuthenticated = false;
+        boolean isAuthenticated;
         try {
-            userAuthenticated = userDAO.authenticateUser(userData.username(), userData.password());
+            isAuthenticated = userDAO.authenticateUser(userData.username(), userData.password());
         } catch (DataAccessException e) {
             throw new UnauthorizedException();
         }
 
-        if (userAuthenticated) {
-            String authToken = UUID.randomUUID().toString();
-            AuthData authData = new AuthData(userData.username(), authToken);
-            authDAO.addAuth(authData);
-            return authData;
-        }
-        else {
+        if (!isAuthenticated) {
             throw new UnauthorizedException();
         }
+
+        String authToken = UUID.randomUUID().toString();
+        AuthData authData = new AuthData(userData.username(), authToken);
+        authDAO.addAuth(authData);
+
+        return authData;
     }
 
     public void logoutUser(String authToken) throws UnauthorizedException {
@@ -55,9 +55,9 @@ public class UserService {
         } catch (DataAccessException e) {
             throw new UnauthorizedException();
         }
+
         authDAO.deleteAuth(authToken);
     }
-
 
     public void clear() {
         userDAO.clear();

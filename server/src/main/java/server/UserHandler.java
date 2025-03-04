@@ -11,45 +11,61 @@ import spark.Response;
 
 public class UserHandler {
 
-    UserService userService;
+    private final UserService userService;
+    private final Gson gson;
 
     public UserHandler(UserService userService) {
         this.userService = userService;
+        this.gson = new Gson();
     }
 
-    public Object register(Request req, Response resp) throws BadRequestException {
+    public Object handleUserRegistration(Request req, Response resp) throws BadRequestException {
+        UserData userData = gson.fromJson(req.body(), UserData.class);
 
-        UserData userData = new Gson().fromJson(req.body(), UserData.class);
-
-        if (userData.username() == null || userData.password() == null) {
-            throw new BadRequestException("No username and/or password given");
+        if (userData == null || isInvalidUserData(userData)) {
+            throw new BadRequestException("Missing username or password");
         }
 
         try {
             AuthData authData = userService.createUser(userData);
             resp.status(200);
-            return new Gson().toJson(authData);
+            return gson.toJson(authData);
         } catch (BadRequestException e) {
             resp.status(403);
-            return "{ \"message\": \"Error: already taken\" }";
+            return generateErrorResponse();
         }
     }
 
-    public Object login(Request req, Response resp) throws UnauthorizedException, BadRequestException {
-        UserData userData = new Gson().fromJson(req.body(), UserData.class);
-        AuthData authData = userService.loginUser(userData);
+    public Object handleUserLogin(Request req, Response resp) throws UnauthorizedException, BadRequestException {
+        UserData userData = gson.fromJson(req.body(), UserData.class);
 
+        if (userData == null || isInvalidUserData(userData)) {
+            throw new BadRequestException("Missing username or password");
+        }
+
+        AuthData authData = userService.loginUser(userData);
         resp.status(200);
-        return new Gson().toJson(authData);
+        return gson.toJson(authData);
     }
 
-    public Object logout(Request req, Response resp) throws UnauthorizedException {
+    public Object handleUserLogout(Request req, Response resp) throws UnauthorizedException {
         String authToken = req.headers("authorization");
 
-        userService.logoutUser(authToken);
+        if (authToken == null || authToken.isBlank()) {
+            throw new UnauthorizedException();
+        }
 
+        userService.logoutUser(authToken);
         resp.status(200);
         return "{}";
     }
 
+    private boolean isInvalidUserData(UserData userData) {
+        return userData.username() == null || userData.username().isBlank()
+                || userData.password() == null || userData.password().isBlank();
+    }
+
+    private String generateErrorResponse() {
+        return "{ \"message\": \"Error: " + "Username already taken" + "\" }";
+    }
 }
