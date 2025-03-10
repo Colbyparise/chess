@@ -4,10 +4,6 @@ import java.util.HashSet;
 
 public interface PieceMovesCalculator {
 
-    static HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition currentPos) {
-        return null; // This is a placeholder
-    }
-
     static boolean isPositionValid(ChessPosition position) {
         int row = position.getRow();
         int col = position.getColumn();
@@ -39,7 +35,8 @@ public interface PieceMovesCalculator {
             boolean isBlocked = false;
 
             while (!isBlocked) {
-                ChessPosition targetPos = new ChessPosition(row + direction[1] * step, col + direction[0] * step);
+                ChessPosition targetPos = new ChessPosition(row + direction[1] * step,
+                        col + direction[0] * step);
 
                 if (!isPositionValid(targetPos)) {
                     isBlocked = true;
