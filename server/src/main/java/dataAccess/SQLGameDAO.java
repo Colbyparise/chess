@@ -1,6 +1,7 @@
 package dataaccess;
+import chess.ChessGame;
 import model.GameData;
-
+import com.google.gson.Gson;
 import java.sql.SQLException;
 import java.util.HashSet;
 
@@ -83,3 +84,24 @@ public class SQLGameDAO implements GameDAO {
             throw new DataAccessException("Game not found, id: " + gameID);
         }
     }}
+
+
+@Override
+public void clear() {
+    try (var conn = DatabaseManager.getConnection()) {
+        try (var statement = conn.prepareStatement("TRUNCATE game")) {
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new RuntimeException(exception);
+        }
+    } catch (SQLException | DataAccessException exception) {
+    }
+}
+
+private String serializeGame(ChessGame game) {
+    return new Gson().toJson(game);
+}
+
+private ChessGame deserializeGame(String serializedGame) {
+    return new Gson().fromJson(serializedGame, ChessGame.class);
+}

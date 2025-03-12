@@ -53,7 +53,7 @@ public class SQLUserDAO implements UserDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Database error while fetching user: " + username, e);
+            throw new DataAccessException("Database error while fetching user: " + username);
         }
     }
 
@@ -70,7 +70,7 @@ public class SQLUserDAO implements UserDAO {
 
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new DataAccessException("User already exists or database error: " + user.username(), e);
+            throw new DataAccessException("User already exists or database error: " + user.username());
         }
     }
 
@@ -91,7 +91,7 @@ public class SQLUserDAO implements UserDAO {
                 return false;  // User not found
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error during authentication for user: " + username, e);
+            throw new DataAccessException("Error during authentication for user: " + username);
         }
     }
 
