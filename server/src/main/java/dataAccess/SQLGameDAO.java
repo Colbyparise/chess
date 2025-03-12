@@ -1,6 +1,4 @@
 package dataaccess;
-import chess.ChessGame;
-import com.google.gson.Gson;
 import model.GameData;
 
 import java.sql.SQLException;
@@ -84,4 +82,4 @@ public class SQLGameDAO implements GameDAO {
         } catch (SQLException e) {
             throw new DataAccessException("Game not found, id: " + gameID);
         }
-    }
+    }}
