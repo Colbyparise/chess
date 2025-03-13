@@ -4,6 +4,8 @@ import chess.ChessGame;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
+
+import javax.xml.crypto.Data;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,9 +36,12 @@ public class GameService {
         do {
             gameID = ThreadLocalRandom.current().nextInt(1, 10000);
         } while (gameDAO.gameExists(gameID));
-
-        gameDAO.createGame(new GameData(gameID, null, null, gameName, new ChessGame()));
-        return gameID;
+        try {
+            gameDAO.createGame(new GameData(gameID, null, null, gameName, new ChessGame()));
+        } catch (DataAccessException exception) {
+            throw new BadRequestException(exception.getMessage());
+        }
+            return gameID;
     }
 
     public boolean joinGame(String authToken, int gameID, String color) throws UnauthorizedException, BadRequestException {
@@ -61,9 +66,12 @@ public class GameService {
                 updatedBlackUser = authData.username();
             }
         }
-
-        gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
-        return true;
+        try {
+            gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
+        } catch (DataAccessException exception) {
+            throw new BadRequestException(exception.getMessage());
+            }
+            return true;
     }
 
     public void clear() {
