@@ -3,12 +3,13 @@ package server;
 import com.google.gson.Gson;
 import dataaccess.BadRequestException;
 import dataaccess.UnauthorizedException;
+import dataaccess.DataAccessException;
 import model.GameData;
 import service.GameService;
 import spark.Request;
 import spark.Response;
 
-import java.util.Set;
+import java.util.HashSet;
 
 public class GameHandler {
 
@@ -21,15 +22,18 @@ public class GameHandler {
 
     public Object handleListGames(Request req, Response resp) throws UnauthorizedException {
         String authToken = req.headers("authorization");
-        Set<GameData> games = gameService.listGames(authToken);
+        HashSet<GameData> games = gameService.listGames(authToken);
 
         resp.status(200);
-        return gson.toJson(new ListGamesResponse(games));
+        return "{ \"games\": %s}".formatted(gson.toJson(games));
     }
 
-    public Object handleCreateGame(Request req, Response resp) throws BadRequestException, UnauthorizedException {
-        CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
+    public Object handleCreateGame(Request req, Response resp) throws BadRequestException, UnauthorizedException, DataAccessException {
+        if (!req.body().contains("\"gameName\":")) {
+            throw new BadRequestException("No gameName provided");
+        }
 
+        CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
         if (request == null || request.gameName() == null || request.gameName().isBlank()) {
             throw new BadRequestException("Game name is required.");
         }
@@ -38,12 +42,15 @@ public class GameHandler {
         int gameID = gameService.createGame(authToken, request.gameName());
 
         resp.status(200);
-        return gson.toJson(new CreateGameResponse(gameID));
+        return "{ \"gameID\": %d }".formatted(gameID);
     }
 
-    public Object handleJoinGame(Request req, Response resp) throws BadRequestException, UnauthorizedException {
-        String authToken = req.headers("authorization");
+    public Object handleJoinGame(Request req, Response resp) throws BadRequestException, UnauthorizedException, DataAccessException {
+        if (!req.body().contains("\"gameID\":")) {
+            throw new BadRequestException("No gameID provided");
+        }
 
+        String authToken = req.headers("authorization");
         JoinGameRequest request = gson.fromJson(req.body(), JoinGameRequest.class);
 
         if (request == null || request.gameID() <= 0) {
@@ -54,7 +61,7 @@ public class GameHandler {
 
         if (!success) {
             resp.status(403);
-            return gson.toJson(new ErrorResponse("Error: Spot already taken."));
+            return gson.toJson(new ErrorResponse("Error: already taken"));
         }
 
         resp.status(200);
@@ -62,9 +69,12 @@ public class GameHandler {
     }
 
     // Response & Request DTOs
-    private record ListGamesResponse(Set<GameData> games) {}
-    private record CreateGameRequest(String gameName) {}
-    private record CreateGameResponse(int gameID) {}
-    private record JoinGameRequest(String playerColor, int gameID) {}
-    private record ErrorResponse(String message) {}
+    private record CreateGameRequest(String gameName) {
+    }
+
+    private record JoinGameRequest(String playerColor, int gameID) {
+    }
+
+    private record ErrorResponse(String message) {
+    }
 }

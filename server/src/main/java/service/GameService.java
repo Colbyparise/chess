@@ -5,7 +5,6 @@ import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 
-import javax.xml.crypto.Data;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;

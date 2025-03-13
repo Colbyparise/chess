@@ -1,9 +1,10 @@
-package service;
+package passoff.server;
 
 import dataaccess.*;
 import model.AuthData;
 import model.UserData;
 import org.junit.jupiter.api.*;
+import service.UserService;
 
 public class UserServiceTest {
 

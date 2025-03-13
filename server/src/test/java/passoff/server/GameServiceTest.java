@@ -1,9 +1,11 @@
-package service;
+package passoff.server;
 import chess.ChessGame;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 import org.junit.jupiter.api.*;
+import service.GameService;
+
 import java.util.HashSet;
 
 
