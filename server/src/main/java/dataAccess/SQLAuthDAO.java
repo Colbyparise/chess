@@ -35,6 +35,7 @@ public class SQLAuthDAO implements AuthDAO {
             }
         } catch (SQLException | DataAccessException e) {
         }
+
     }
 
     @Override

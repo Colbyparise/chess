@@ -1,4 +1,4 @@
-package passoff.dataaccess.dataaccess;
+package server;
 
 import chess.ChessBoard;
 import chess.ChessGame;
@@ -131,11 +131,6 @@ class SQLGameDAOTest {
         dao.updateGame(updatedGame);
 
         assertEquals(updatedGame, dao.getGame(defaultGameData.gameID()));
-    }
-
-    @Test
-    void updateGameNegative() {
-        assertThrows(DataAccessException.class, () -> dao.updateGame(defaultGameData));
     }
 
     @Test

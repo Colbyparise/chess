@@ -7,16 +7,22 @@ import spark.*;
 
 public class Server {
 
-    private final UserService userService;
-    private final GameService gameService;
 
-    private final UserHandler userHandler;
-    private final GameHandler gameHandler;
+    UserDAO userDAO;
+    AuthDAO authDAO;
+    GameDAO gameDAO;
+
+    UserService userService;
+    GameService gameService;
+
+    UserHandler userHandler;
+    GameHandler gameHandler;
 
     public Server() {
-        UserDAO userDAO = new MemoryUserDAO();
-        AuthDAO authDAO = new MemoryAuthDAO();
-        GameDAO gameDAO = new MemoryGameDAO();
+
+        userDAO = new SQLUserDAO();
+        authDAO = new SQLAuthDAO();
+        gameDAO = new SQLGameDAO();
 
         userService = new UserService(userDAO, authDAO);
         gameService = new GameService(gameDAO, authDAO);
@@ -24,32 +30,29 @@ public class Server {
         userHandler = new UserHandler(userService);
         gameHandler = new GameHandler(gameService);
 
-        try { DatabaseManager.createDatabase(); } catch (DataAccessException exception) {
-            throw new RuntimeException(exception);
+        try { DatabaseManager.createDatabase(); } catch (DataAccessException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
     public int run(int desiredPort) {
         Spark.port(desiredPort);
+
         Spark.staticFiles.location("web");
 
-        // User routes
-        Spark.post("/user", userHandler::handleUserRegistration);
-        Spark.post("/session", userHandler::handleUserLogin);
-        Spark.delete("/session", userHandler::handleUserLogout);
+        Spark.delete("/db", this::clear);
+        Spark.post("/user", userHandler::register);
+        Spark.post("/session", userHandler::login);
+        Spark.delete("/session", userHandler::logout);
 
-        // Game routes
-        Spark.get("/game", gameHandler::handleListGames);
-        Spark.post("/game", gameHandler::handleCreateGame);
-        Spark.put("/game", gameHandler::handleJoinGame);
+        Spark.get("/game", gameHandler::listGames);
+        Spark.post("/game", gameHandler::createGame);
+        Spark.put("/game", gameHandler::joinGame);
 
-        // Database clear route
-        Spark.delete("/db", this::clearDatabase);
+        Spark.exception(BadRequestException.class, this::badRequestExceptionHandler);
+        Spark.exception(UnauthorizedException.class, this::unauthorizedExceptionHandler);
+        Spark.exception(Exception.class, this::genericExceptionHandler);
 
-        // Exception handling
-        Spark.exception(BadRequestException.class, this::handleBadRequestException);
-        Spark.exception(UnauthorizedException.class, this::handleUnauthorizedException);
-        Spark.exception(Exception.class, this::handleGenericException);
 
         Spark.awaitInitialization();
         return Spark.port();
@@ -60,25 +63,28 @@ public class Server {
         Spark.awaitStop();
     }
 
-    private Object clearDatabase(Request req, Response resp) {
+    private Object clear(Request req, Response resp) {
+
         userService.clear();
         gameService.clear();
+
         resp.status(200);
         return "{}";
     }
 
-    private void handleBadRequestException(BadRequestException ex, Request req, Response resp) {
+    private void badRequestExceptionHandler(BadRequestException ex, Request req, Response resp) {
         resp.status(400);
         resp.body("{ \"message\": \"Error: bad request\" }");
     }
 
-    private void handleUnauthorizedException(UnauthorizedException ex, Request req, Response resp) {
+    private void unauthorizedExceptionHandler(UnauthorizedException ex, Request req, Response resp) {
         resp.status(401);
         resp.body("{ \"message\": \"Error: unauthorized\" }");
     }
 
-    private void handleGenericException(Exception ex, Request req, Response resp) {
+    private void genericExceptionHandler(Exception ex, Request req, Response resp) {
         resp.status(500);
         resp.body("{ \"message\": \"Error: %s\" }".formatted(ex.getMessage()));
     }
+
 }
