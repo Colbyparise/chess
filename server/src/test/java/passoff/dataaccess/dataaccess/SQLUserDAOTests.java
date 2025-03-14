@@ -1,4 +1,4 @@
-package passoff.server.dataaccesstests;
+package passoff.dataaccess.dataaccess;
 
 import dataaccess.UserDAO;
 import dataaccess.DataAccessException;

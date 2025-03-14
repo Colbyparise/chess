@@ -1,4 +1,4 @@
-package passoff.server;
+package passoff.service;
 import chess.ChessGame;
 import dataaccess.*;
 import model.AuthData;

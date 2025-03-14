@@ -1,9 +1,10 @@
-package passoff.server;
+package passoff.service;
 
 import chess.ChessGame;
 import org.junit.jupiter.api.*;
 import passoff.model.*;
 import server.Server;
+import passoff.server.*;
 
 import java.lang.reflect.Method;
 import java.sql.*;
