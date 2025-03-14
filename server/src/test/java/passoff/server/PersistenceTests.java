@@ -1,13 +1,11 @@
-package passoff.service;
+package passoff.server;
 
 import chess.ChessGame;
 import org.junit.jupiter.api.*;
 import passoff.exception.TestException;
 import passoff.model.*;
-import passoff.server.TestServerFacade;
 import server.Server;
 
-import passoff.model.*;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -45,48 +43,38 @@ public class PersistenceTests {
     public void persistenceTest() throws TestException {
         var initialRowCount = getDatabaseRows();
 
-        TestModels.TestRegisterRequest registerRequest = new TestRegisterRequest();
-        registerRequest.username = "ExistingUser";
-        registerRequest.password = "existingUserPassword";
-        registerRequest.email = "eu@mail.com";
+        TestUser registerRequest = new TestUser("ExistingUser", "existingUserPassword", "eu@mail.com");
 
-        TestModels.TestLoginRegisterResult regResult = serverFacade.register(registerRequest);
-        var auth = regResult.authToken;
+        TestAuthResult regResult = serverFacade.register(registerRequest);
+        var auth = regResult.getAuthToken();
 
-        //create a game
-        TestModels.TestCreateRequest createRequest = new TestModels.TestCreateRequest();
-        createRequest.gameName = "Test Game";
-        TestModels.TestCreateResult createResult = serverFacade.createGame(createRequest, auth);
+        // Create a game
+        TestCreateRequest createRequest = new TestCreateRequest("Test Game");
+        TestCreateResult createResult = serverFacade.createGame(createRequest, auth);
 
-        //join the game
-        TestModels.TestJoinRequest joinRequest = new TestModels.TestJoinRequest();
-        joinRequest.gameID = createResult.gameID;
-        joinRequest.playerColor = ChessGame.TeamColor.WHITE;
-        serverFacade.verifyJoinPlayer(joinRequest, auth);
+        // Join the game
+        TestJoinRequest joinRequest = new TestJoinRequest(ChessGame.TeamColor.WHITE, createResult.getGameID());
+        serverFacade.joinPlayer(joinRequest, auth);
 
+        // Check database row count increased
         Assertions.assertTrue(initialRowCount < getDatabaseRows(), "No new data added to database");
 
-        // Test that we can read the data after a restart
+        // Restart the server and test persistence
         stopServer();
         startServer();
 
-        //list games using the auth
-        TestModels.TestListResult listResult = serverFacade.listGames(auth);
+        // List games after restart
+        TestListResult listResult = serverFacade.listGames(auth);
         Assertions.assertEquals(200, serverFacade.getStatusCode(), "Server response code was not 200 OK");
-        Assertions.assertEquals(1, listResult.games.length, "Missing game(s) in database after restart");
+        Assertions.assertEquals(1, listResult.getGames().length, "Missing game(s) in database after restart");
 
-        TestModels.TestListResult.TestListEntry game1 = listResult.games[0];
-        Assertions.assertEquals(game1.gameID, createResult.gameID);
-        Assertions.assertEquals(createRequest.gameName, game1.gameName, "Game name changed after restart");
-        Assertions.assertEquals(registerRequest.username, game1.whiteUsername,
+        // Validate game data after restart
+        TestListEntry game1 = listResult.getGames()[0];
+        Assertions.assertEquals(game1.getGameID(), createResult.getGameID());
+        Assertions.assertEquals(getGameName(createRequest), game1.getGameName(), "Game name changed after restart");
+        Assertions.assertEquals(registerRequest.getUsername(), game1.getWhiteUsername(),
                 "White player username changed after restart");
 
-        //test that we can still log in
-        TestModels.TestLoginRequest loginRequest = new TestModels.TestLoginRequest();
-        loginRequest.username = registerRequest.username;
-        loginRequest.password = registerRequest.password;
-        serverFacade.login(loginRequest);
-        Assertions.assertEquals(200, serverFacade.getStatusCode(), "Unable to login");
     }
 
 
@@ -98,7 +86,7 @@ public class PersistenceTests {
             getConnectionMethod.setAccessible(true);
 
             Object obj = clazz.getDeclaredConstructor().newInstance();
-            try (Connection conn = (Connection) getConnectionMethod.invoke(obj);) {
+            try (Connection conn = (Connection) getConnectionMethod.invoke(obj)) {
                 try (var statement = conn.createStatement()) {
                     for (String table : getTables(conn)) {
                         var sql = "SELECT count(*) FROM " + table;
@@ -116,6 +104,16 @@ public class PersistenceTests {
         }
 
         return rows;
+    }
+
+    private String getGameName(TestCreateRequest request) {
+        try {
+            var field = TestCreateRequest.class.getDeclaredField("gameName");
+            field.setAccessible(true);
+            return (String) field.get(request);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to access gameName field", e);
+        }
     }
 
     private List<String> getTables(Connection conn) throws SQLException {

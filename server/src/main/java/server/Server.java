@@ -23,6 +23,10 @@ public class Server {
 
         userHandler = new UserHandler(userService);
         gameHandler = new GameHandler(gameService);
+
+        try { DatabaseManager.createDatabase(); } catch (DataAccessException exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
     public int run(int desiredPort) {
