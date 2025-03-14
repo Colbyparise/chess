@@ -12,50 +12,60 @@ import spark.Response;
 public class UserHandler {
 
     private final UserService userService;
-    private final Gson gson = new Gson();
+    private final Gson gson;
 
     public UserHandler(UserService userService) {
         this.userService = userService;
+        this.gson = new Gson();
     }
 
-    public Object register(Request request, Response response) throws BadRequestException {
-        UserData userData = gson.fromJson(request.body(), UserData.class);
+    public Object handleUserRegistration(Request req, Response resp) throws BadRequestException {
+        UserData userData = gson.fromJson(req.body(), UserData.class);
 
-        if (userData.username() == null || userData.password() == null) {
-            throw new BadRequestException("No username and/or password provided.");
+        if (userData == null || isInvalidUserData(userData)) {
+            throw new BadRequestException("Missing username or password");
         }
 
         try {
             AuthData authData = userService.createUser(userData);
-            response.status(200);
+            resp.status(200);
             return gson.toJson(authData);
         } catch (BadRequestException e) {
-            response.status(403);
-            return gson.toJson(new ErrorMessage("Error: already taken"));
+            resp.status(403);
+            return generateErrorResponse();
         }
     }
 
-    public Object login(Request request, Response response) throws UnauthorizedException, BadRequestException {
-        UserData userData = gson.fromJson(request.body(), UserData.class);
-        AuthData authData = userService.loginUser(userData);
+    public Object handleUserLogin(Request req, Response resp) throws UnauthorizedException, BadRequestException {
+        UserData userData = gson.fromJson(req.body(), UserData.class);
 
-        response.status(200);
+        if (userData == null || isInvalidUserData(userData)) {
+            throw new BadRequestException("Missing username or password");
+        }
+
+        AuthData authData = userService.loginUser(userData);
+        resp.status(200);
         return gson.toJson(authData);
     }
 
-    public Object logout(Request request, Response response) throws UnauthorizedException {
-        String authToken = request.headers("authorization");
-        userService.logoutUser(authToken);
+    public Object handleUserLogout(Request req, Response resp) throws UnauthorizedException {
+        String authToken = req.headers("authorization");
 
-        response.status(200);
-        return gson.toJson(new EmptyResponse());
-    }
-
-    private static class ErrorMessage {
-
-        public ErrorMessage(String message) {
+        if (authToken == null || authToken.isBlank()) {
+            throw new UnauthorizedException();
         }
+
+        userService.logoutUser(authToken);
+        resp.status(200);
+        return "{}";
     }
 
-    private static class EmptyResponse {}
+    private boolean isInvalidUserData(UserData userData) {
+        return userData.username() == null || userData.username().isBlank()
+                || userData.password() == null || userData.password().isBlank();
+    }
+
+    private String generateErrorResponse() {
+        return "{ \"message\": \"Error: " + "Username already taken" + "\" }";
+    }
 }
