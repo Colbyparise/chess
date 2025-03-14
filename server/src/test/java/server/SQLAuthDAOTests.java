@@ -17,9 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SQLAuthDAOTest {
 
-    AuthDAO dao;
-
-    AuthData defaultAuth;
+    private AuthDAO dao;
+    private AuthData defaultAuth;
 
     @BeforeEach
     void setUp() throws DataAccessException, SQLException {
@@ -35,22 +34,21 @@ class SQLAuthDAOTest {
     }
 
     private void clearAuthTable() throws SQLException, DataAccessException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement statement = conn.prepareStatement("TRUNCATE auth")) {
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("TRUNCATE auth")) {
             statement.executeUpdate();
         }
     }
 
     private boolean authEntryExists(String username) throws SQLException, DataAccessException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement statement = conn.prepareStatement("SELECT username FROM auth WHERE username=?")) {
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT username FROM auth WHERE username=?")) {
             statement.setString(1, username);
             try (var results = statement.executeQuery()) {
                 return results.next();
             }
         }
     }
-
 
     @Test
     void addAuthPositive() throws DataAccessException, SQLException {
@@ -60,17 +58,16 @@ class SQLAuthDAOTest {
         assertEquals(defaultAuth, result);
     }
 
-
     @Test
     void addAuthNegative() throws DataAccessException, SQLException {
         dao.addAuth(defaultAuth);
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement statement = conn.prepareStatement("SELECT COUNT(*) FROM auth WHERE username=?")) {
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM auth WHERE username=?")) {
             statement.setString(1, defaultAuth.username());
             try (var results = statement.executeQuery()) {
                 results.next();
                 int count = results.getInt(1);
-                assertEquals(1, count); // Assert that only one row exists
+                assertEquals(1, count);
             }
         }
     }

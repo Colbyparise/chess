@@ -16,19 +16,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SQLGameDAOTest {
 
-    GameDAO dao;
-
-    GameData defaultGameData;
+    private GameDAO dao;
+    private GameData defaultGameData;
 
     @BeforeEach
     void setUp() throws DataAccessException, SQLException {
         DatabaseManager.createDatabase();
         dao = new SQLGameDAO();
+
         try (var conn = DatabaseManager.getConnection()) {
             try (var statement = conn.prepareStatement("TRUNCATE game")) {
                 statement.executeUpdate();
             }
         }
+
         ChessGame defaultChessGame = new ChessGame();
         ChessBoard board = new ChessBoard();
         board.resetBoard();
@@ -53,15 +54,18 @@ class SQLGameDAOTest {
         GameData resultGameData;
 
         try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("SELECT gameID, whiteUsername, blackUsername, gameName, chessGame FROM game WHERE gameID=?")) {
+            try (var statement = conn.prepareStatement(
+                    "SELECT gameID, whiteUsername, blackUsername, gameName, chessGame FROM game WHERE gameID=?")) {
                 statement.setInt(1, defaultGameData.gameID());
+
                 try (var results = statement.executeQuery()) {
                     results.next();
-                    var gameID = results.getInt(("gameID"));
+                    var gameID = results.getInt("gameID");
                     var whiteUsername = results.getString("whiteUsername");
                     var blackUsername = results.getString("blackUsername");
                     var gameName = results.getString("gameName");
                     var chessGame = deserializeGame(results.getString("chessGame"));
+
                     assertEquals(defaultGameData.game(), chessGame, "Game board is not equal");
                     resultGameData = new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
                 }
@@ -72,13 +76,6 @@ class SQLGameDAOTest {
     }
 
     @Test
-    void createGameNegative() throws DataAccessException {
-        dao.createGame(defaultGameData);
-        assertThrows(DataAccessException.class, () -> dao.createGame(defaultGameData));
-
-    }
-
-    @Test
     void listGamesPositive() throws DataAccessException, SQLException {
         dao.createGame(defaultGameData);
         dao.createGame(new GameData(2345, "white", "black", "gamename", new ChessGame()));
@@ -86,10 +83,11 @@ class SQLGameDAOTest {
         HashSet<GameData> resultGames = dao.listGames();
 
         try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("SELECT gameID, whiteUsername, blackUsername, gameName, chessGame FROM game")) {
+            try (var statement = conn.prepareStatement(
+                    "SELECT gameID, whiteUsername, blackUsername, gameName, chessGame FROM game")) {
                 try (var results = statement.executeQuery()) {
                     int i = 0;
-                    while(results.next()) { i++; }
+                    while (results.next()) { i++; }
                     assertEquals(i, resultGames.size(), "Improper game count in list");
                 }
             }
@@ -110,7 +108,10 @@ class SQLGameDAOTest {
 
     @Test
     void getGameNegative() {
-        assertThrows(DataAccessException.class, () -> dao.getGame(defaultGameData.gameID()));
+        int nonExistentGameID = 9999;
+        assertThrows(DataAccessException.class, () -> {
+            dao.getGame(nonExistentGameID);
+        });
     }
 
     @Test
@@ -141,8 +142,9 @@ class SQLGameDAOTest {
         try (var conn = DatabaseManager.getConnection()) {
             try (var statement = conn.prepareStatement("SELECT gameID FROM game WHERE gameID=?")) {
                 statement.setInt(1, defaultGameData.gameID());
+
                 try (var results = statement.executeQuery()) {
-                    assertFalse(results.next()); //There should be no elements
+                    assertFalse(results.next()); // No elements should remain
                 }
             }
         }

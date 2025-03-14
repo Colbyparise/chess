@@ -25,7 +25,6 @@ public class GameHandler {
     }
 
     public Object createGame(Request req, Response resp) throws BadRequestException, UnauthorizedException {
-
         if (!req.body().contains("\"gameName\":")) {
             throw new BadRequestException("No gameName provided");
         }
@@ -54,10 +53,7 @@ public class GameHandler {
             resp.status(403);
             return "{ \"message\": \"Error: already taken\" }";
         }
-
         resp.status(200);
         return "{}";
     }
-
-
 }

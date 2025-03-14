@@ -10,34 +10,35 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SQLUserDAOTest {
 
-    UserDAO dao;
-    UserData defaultUser;
+    private UserDAO dao;
+    private UserData defaultUser;
 
     @BeforeEach
     void setUp() throws DataAccessException, SQLException {
         DatabaseManager.createDatabase();
         dao = new SQLUserDAO();
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("TRUNCATE user")) {
-                statement.executeUpdate();
-            }
-        }
-
+        clearUserTable();
         defaultUser = new UserData("username", "password", "email");
     }
 
     @AfterEach
     void tearDown() throws SQLException, DataAccessException {
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("TRUNCATE user")) {
-                statement.executeUpdate();
-            }
+        clearUserTable();
+    }
+
+    private void clearUserTable() throws SQLException, DataAccessException {
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("TRUNCATE user")) {
+            statement.executeUpdate();
         }
     }
 
@@ -45,25 +46,11 @@ class SQLUserDAOTest {
     void createUserPositive() throws DataAccessException, SQLException {
         dao.createUser(defaultUser);
 
-        String resultUsername;
-        String resultPassword;
-        String resultEmail;
+        UserData resultUser = fetchUserFromDatabase(defaultUser.username());
 
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("SELECT username, password, email FROM user WHERE username=?")) {
-                statement.setString(1, defaultUser.username());
-                try (var results = statement.executeQuery()) {
-                    results.next();
-                    resultUsername = results.getString("username");
-                    resultPassword = results.getString("password");
-                    resultEmail = results.getString("email");
-                }
-            }
-        }
-
-        assertEquals(defaultUser.username(), resultUsername);
-        assertTrue(passwordMatches(defaultUser.password(), resultPassword));
-        assertEquals(defaultUser.email(), resultEmail);
+        assertEquals(defaultUser.username(), resultUser.username());
+        assertTrue(passwordMatches(defaultUser.password(), resultUser.password()));
+        assertEquals(defaultUser.email(), resultUser.email());
     }
 
     @Test
@@ -85,14 +72,12 @@ class SQLUserDAOTest {
     @Test
     void authenticateUserPositive() throws DataAccessException {
         dao.createUser(defaultUser);
-
         assertTrue(dao.authenticateUser(defaultUser.username(), defaultUser.password()));
     }
 
     @Test
     void authenticateUserNegative() throws DataAccessException {
         dao.createUser(defaultUser);
-
         assertFalse(dao.authenticateUser(defaultUser.username(), "badPass"));
     }
 
@@ -101,17 +86,33 @@ class SQLUserDAOTest {
         dao.createUser(defaultUser);
         dao.clear();
 
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("SELECT username, password, email FROM user WHERE username=?")) {
-                statement.setString(1, defaultUser.username());
-                try (var results = statement.executeQuery()) {
-                    assertFalse(results.next()); //There should be no elements
-                }
-            }
-        }
+        assertFalse(userExistsInDatabase(defaultUser.username()));
     }
 
     private boolean passwordMatches(String rawPassword, String hashedPassword) {
         return BCrypt.checkpw(rawPassword, hashedPassword);
+    }
+
+    private UserData fetchUserFromDatabase(String username) throws SQLException, DataAccessException {
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT username, password, email FROM user WHERE username=?")) {
+            statement.setString(1, username);
+            try (ResultSet results = statement.executeQuery()) {
+                if (results.next()) {
+                    return new UserData(results.getString("username"), results.getString("password"), results.getString("email"));
+                }
+                return null;
+            }
+        }
+    }
+
+    private boolean userExistsInDatabase(String username) throws SQLException, DataAccessException {
+        try (Connection connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT username FROM user WHERE username=?")) {
+            statement.setString(1, username);
+            try (ResultSet results = statement.executeQuery()) {
+                return results.next();
+            }
+        }
     }
 }
