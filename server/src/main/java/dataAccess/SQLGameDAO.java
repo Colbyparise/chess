@@ -52,7 +52,7 @@ public class SQLGameDAO implements GameDAO {
                 }
             }
         } catch (SQLException | DataAccessException e) {
-            return null;  // Returning null in case of any issues.
+            return null;
         }
 
         return games;
@@ -60,18 +60,16 @@ public class SQLGameDAO implements GameDAO {
 
     @Override
     public void createGame(GameData game) {
-        String insertSQL = "INSERT INTO game (gameID, whiteUsername, blackUsername, gameName, chessGame) VALUES (?, ?, ?, ?, ?)";
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(insertSQL)) {
-
-            stmt.setInt(1, game.gameID());
-            stmt.setString(2, game.whiteUsername());
-            stmt.setString(3, game.blackUsername());
-            stmt.setString(4, game.gameName());
-            stmt.setString(5, serializeGame(game.game()));
-            stmt.executeUpdate();
+        try (var conn = DatabaseManager.getConnection()) {
+            try (var statement = conn.prepareStatement("INSERT INTO game (gameID, whiteUsername, blackUsername, gameName, chessGame) VALUES(?, ?, ?, ?, ?)")) {
+                statement.setInt(1, game.gameID());
+                statement.setString(2, game.whiteUsername());
+                statement.setString(3, game.blackUsername());
+                statement.setString(4, game.gameName());
+                statement.setString(5, serializeGame(game.game()));
+                statement.executeUpdate();
+            }
         } catch (SQLException | DataAccessException e) {
-            // Handle exception if needed.
         }
     }
 
@@ -89,13 +87,14 @@ public class SQLGameDAO implements GameDAO {
                     var gameName = resultSet.getString("gameName");
                     var chessGame = deserializeGame(resultSet.getString("chessGame"));
                     return new GameData(gameID, whiteUsername, blackUsername, gameName, chessGame);
+                } else {
+                    // If no game is found, throw DataAccessException
+                    throw new DataAccessException("Game not found: " + gameID);
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Game not found, id: " + gameID);
+            throw new DataAccessException("Error retrieving game: " + gameID);
         }
-
-        return null;  // In case no game is found.
     }
 
     @Override
@@ -126,7 +125,6 @@ public class SQLGameDAO implements GameDAO {
             stmt.setInt(5, game.gameID());
             stmt.executeUpdate();
         } catch (SQLException | DataAccessException e) {
-            // Handle exception if needed.
         }
     }
 

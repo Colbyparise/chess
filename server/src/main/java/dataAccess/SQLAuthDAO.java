@@ -1,80 +1,84 @@
 package dataaccess;
-
 import model.AuthData;
-import java.sql.Connection;
 import java.sql.SQLException;
 
 public class SQLAuthDAO implements AuthDAO {
 
     public SQLAuthDAO() {
-        try { DatabaseManager.createDatabase(); } catch (DataAccessException ex) {
-            throw new RuntimeException(ex);
+        try {
+            DatabaseManager.createDatabase();
+        } catch (DataAccessException ex) {
+            throw new RuntimeException("Error creating database: " + ex.getMessage(), ex);
         }
+
         try (var conn = DatabaseManager.getConnection()) {
-            var createTestTable = """            
-                    CREATE TABLE if NOT EXISTS auth (
-                                    username VARCHAR(255) NOT NULL,
-                                    authToken VARCHAR(255) NOT NULL,
-                                    PRIMARY KEY (authToken)
-                                    )""";
-            try (var createTableStatement = conn.prepareStatement(createTestTable)) {
-                createTableStatement.executeUpdate();
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS auth (" +
+                    "username VARCHAR(255) NOT NULL, " +
+                    "authToken VARCHAR(255) NOT NULL, " +
+                    "PRIMARY KEY (authToken))";
+
+            try (var stmt = conn.prepareStatement(createTableSQL)) {
+                stmt.executeUpdate();
             }
         } catch (SQLException | DataAccessException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error setting up auth table: " + e.getMessage(), e);
         }
     }
 
     @Override
     public void addAuth(AuthData authData) {
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("INSERT INTO auth (username, authToken) VALUES(?, ?)")) {
-                statement.setString(1, authData.username());
-                statement.setString(2, authData.authToken());
-                statement.executeUpdate();
-            }
+        String insertSQL = "INSERT INTO auth (username, authToken) VALUES (?, ?)";
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(insertSQL)) {
+
+            stmt.setString(1, authData.username());
+            stmt.setString(2, authData.authToken());
+            stmt.executeUpdate();
         } catch (SQLException | DataAccessException e) {
         }
-
     }
 
     @Override
     public void deleteAuth(String authToken) {
-        try (Connection conn = DatabaseManager.getConnection() ) {
-            try (var statement = conn.prepareStatement("DELETE FROM auth WHERE authToken=?")) {
-                statement.setString(1, authToken);
-                statement.executeUpdate();
-            }
+        String deleteSQL = "DELETE FROM auth WHERE authToken=?";
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(deleteSQL)) {
+
+            stmt.setString(1, authToken);
+            stmt.executeUpdate();
         } catch (SQLException | DataAccessException e) {
+
         }
     }
 
     @Override
     public AuthData getAuth(String authToken) throws DataAccessException {
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("SELECT username, authToken FROM auth WHERE authToken=?")) {
-                statement.setString(1, authToken);
-                try (var results = statement.executeQuery()) {
-                    results.next();
-                    var username = results.getString("username");
+        String selectSQL = "SELECT username, authToken FROM auth WHERE authToken=?";
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(selectSQL)) {
+
+            stmt.setString(1, authToken);
+            try (var resultSet = stmt.executeQuery()) {
+                if (resultSet.next()) {
+                    var username = resultSet.getString("username");
                     return new AuthData(username, authToken);
+                } else {
+                    throw new DataAccessException("Auth Token does not exist: " + authToken);
                 }
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Auth Token does not exist: " + authToken);
+            throw new DataAccessException("Error retrieving Auth Token: " + authToken);
         }
-
     }
 
     @Override
     public void clear() {
-        try (var conn = DatabaseManager.getConnection()) {
-            try (var statement = conn.prepareStatement("TRUNCATE auth")) {
-                statement.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+        String truncateSQL = "TRUNCATE auth";
+        try (var conn = DatabaseManager.getConnection();
+             var stmt = conn.prepareStatement(truncateSQL)) {
+            stmt.executeUpdate();
         } catch (SQLException | DataAccessException e) {
+            throw new RuntimeException("Error clearing the auth table: " + e.getMessage());
         }
     }
 }
