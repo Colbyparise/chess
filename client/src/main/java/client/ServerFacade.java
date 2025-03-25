@@ -45,7 +45,7 @@ public class ServerFacade {
         return true;
     }
 
-    private boolean logout() {
+    public boolean logout() {
         try {
             URI uri = new URI(baseURL + "/session");
             HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
