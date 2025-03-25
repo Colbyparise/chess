@@ -14,188 +14,179 @@ import java.util.*;
 
 public class ServerFacade {
 
-    String baseURL = "http://localhost:8080";
-    String authToken;
+    private final String baseURL = "http://localhost:8080";
+    private String authToken;
 
-    public ServerFacade() {
-    }
+    public ServerFacade() {}
 
     public boolean register(String username, String password, String email) {
-        var body = Map.of("username", username, "password", password, "email", email);
-        var jsonBody = new Gson().toJson(body);
-        Map resp = request("POST", "/user", jsonBody);
-        if (resp.containsKey("Error")) {
+        var payload = Map.of("username", username, "password", password, "email", email);
+        var jsonPayload = new Gson().toJson(payload);
+        Map response = sendRequest("POST", "/user", jsonPayload);
+
+        if (response.containsKey("Error")) {
             return false;
         }
-        authToken = (String) resp.get("authToken");
+
+        authToken = (String) response.get("authToken");
         return true;
     }
 
-    /**
-     *
-     * @param username
-     * @param password
-     * @return success
-     */
     public boolean login(String username, String password) {
-        var body = Map.of("username", username, "password", password);
-        var jsonBody = new Gson().toJson(body);
-        Map resp = request("POST", "/session", jsonBody);
-        if (resp.containsKey("Error")) {
+        var payload = Map.of("username", username, "password", password);
+        var jsonPayload = new Gson().toJson(payload);
+        Map response = sendRequest("POST", "/session", jsonPayload);
+
+        if (response.containsKey("Error")) {
             return false;
         }
-        authToken = (String) resp.get("authToken");
+
+        authToken = (String) response.get("authToken");
         return true;
     }
 
-    public boolean logout() {
-        Map resp = request("DELETE", "/session");
-        if (resp.containsKey("Error")) {
+    private boolean logout() {
+        try {
+            URI uri = new URI(baseURL + "/session");
+            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
+            http.setRequestMethod("DELETE");
+            if (authToken != null) {
+                http.addRequestProperty("authorization", authToken);
+            }
+            http.connect();
+            if (http.getResponseCode() != 200) {
+                return false;
+            }
+            authToken = null;
+            return true;
+        } catch (URISyntaxException | IOException e) {
             return false;
         }
-        authToken = null;
-        return true;
     }
 
     public int createGame(String gameName) {
-        var body = Map.of("gameName", gameName);
-        var jsonBody = new Gson().toJson(body);
-        Map resp = request("POST", "/game", jsonBody);
-        double gameID = (double) resp.get("gameID");
+        var payload = Map.of("gameName", gameName);
+        var jsonPayload = new Gson().toJson(payload);
+        Map response = sendRequest("POST", "/game", jsonPayload);
+
+        double gameID = (double) response.get("gameID");
         return (int) gameID;
     }
 
     public HashSet<GameData> listGames() {
-        String resp = requestString("GET", "/game");
-        if (resp.contains("Error")) {
-            return HashSet.newHashSet(8);
-        }
-        GamesList games = new Gson().fromJson(resp, GamesList.class);
+        String response = sendRequestString("GET", "/game");
 
-        return games.games();
+        if (response.contains("Error")) {
+            return new HashSet<>(8);
+        }
+
+        GamesList gamesList = new Gson().fromJson(response, GamesList.class);
+        return gamesList.games();
     }
 
     public boolean joinGame(int gameId, String playerColor) {
-        Map body;
-        if (playerColor != null) {
-            body = Map.of("gameID", gameId, "playerColor", playerColor);
-        } else {
-            body = Map.of("gameID", gameId);
-        }
-        var jsonBody = new Gson().toJson(body);
-        Map resp = request("PUT", "/game", jsonBody);
-        return !resp.containsKey("Error");
+        Map payload = (playerColor != null)
+                ? Map.of("gameID", gameId, "playerColor", playerColor)
+                : Map.of("gameID", gameId);
+
+        var jsonPayload = new Gson().toJson(payload);
+        Map response = sendRequest("PUT", "/game", jsonPayload);
+
+        return !response.containsKey("Error");
     }
 
-    private Map request (String method, String endpoint) {
-        return request(method, endpoint, null);
+    private Map sendRequest(String method, String endpoint) {
+        return sendRequest(method, endpoint, null);
     }
 
-    private Map request(String method, String endpoint, String body) {
-        Map respMap;
+    private Map sendRequest(String method, String endpoint, String body) {
         try {
             URI uri = new URI(baseURL + endpoint);
-            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
-            http.setRequestMethod(method);
+            HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+
+            connection.setRequestMethod(method);
 
             if (authToken != null) {
-                http.addRequestProperty("authorization", authToken);
+                connection.addRequestProperty("authorization", authToken);
             }
 
-            if (!Objects.equals(body, null)) {
-                http.setDoOutput(true);
-                http.addRequestProperty("Content-Type", "application/json");
-                try (var outputStream = http.getOutputStream()) {
+            if (body != null) {
+                connection.setDoOutput(true);
+                connection.addRequestProperty("Content-Type", "application/json");
+
+                try (var outputStream = connection.getOutputStream()) {
                     outputStream.write(body.getBytes());
                 }
             }
 
-            http.connect();
+            connection.connect();
 
-            try {
-                if (http.getResponseCode() == 401) {
-                    return Map.of("Error", 401);
-                }
-            } catch (IOException e) {
+            if (connection.getResponseCode() == 401) {
                 return Map.of("Error", 401);
             }
 
-
-            try (InputStream respBody = http.getInputStream()) {
-                InputStreamReader inputStreamReader = new InputStreamReader(respBody);
-                respMap = new Gson().fromJson(inputStreamReader, Map.class);
+            try (InputStream inputStream = connection.getInputStream()) {
+                var reader = new InputStreamReader(inputStream);
+                return new Gson().fromJson(reader, Map.class);
             }
 
         } catch (URISyntaxException | IOException e) {
             return Map.of("Error", e.getMessage());
         }
-
-        return respMap;
     }
 
-    private String requestString(String method, String endpoint) {
-        return requestString(method, endpoint, null);
+    private String sendRequestString(String method, String endpoint) {
+        return sendRequestString(method, endpoint, null);
     }
 
-    private String requestString(String method, String endpoint, String body) {
-        String resp;
+    private String sendRequestString(String method, String endpoint, String body) {
         try {
             URI uri = new URI(baseURL + endpoint);
-            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
-            http.setRequestMethod(method);
+            HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+
+            connection.setRequestMethod(method);
 
             if (authToken != null) {
-                http.addRequestProperty("authorization", authToken);
+                connection.addRequestProperty("authorization", authToken);
             }
 
-            if (!Objects.equals(body, null)) {
-                http.setDoOutput(true);
-                http.addRequestProperty("Content-Type", "application/json");
-                try (var outputStream = http.getOutputStream()) {
+            if (body != null) {
+                connection.setDoOutput(true);
+                connection.addRequestProperty("Content-Type", "application/json");
+
+                try (var outputStream = connection.getOutputStream()) {
                     outputStream.write(body.getBytes());
                 }
             }
 
-            http.connect();
+            connection.connect();
 
-            try {
-                if (http.getResponseCode() == 401) {
-                    return "Error: 401";
-                }
-            } catch (IOException e) {
+            if (connection.getResponseCode() == 401) {
                 return "Error: 401";
             }
 
-
-            try (InputStream respBody = http.getInputStream()) {
-                InputStreamReader inputStreamReader = new InputStreamReader(respBody);
-                resp = readerToString(inputStreamReader);
+            try (InputStream inputStream = connection.getInputStream()) {
+                var reader = new InputStreamReader(inputStream);
+                return readStream(reader);
             }
 
         } catch (URISyntaxException | IOException e) {
             return String.format("Error: %s", e.getMessage());
         }
-
-        return resp;
     }
 
-    private Map mapOf(String string) {
-        System.out.println(string);
-        return new Gson().fromJson(string, Map.class);
-    }
-
-    private String readerToString(InputStreamReader reader) {
+    private String readStream(InputStreamReader reader) {
         StringBuilder sb = new StringBuilder();
+
         try {
             for (int ch; (ch = reader.read()) != -1; ) {
                 sb.append((char) ch);
             }
-            return sb.toString();
         } catch (IOException e) {
             return "";
         }
 
+        return sb.toString();
     }
-
-
 }
+
