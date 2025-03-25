@@ -10,106 +10,124 @@ import static ui.EscapeSequences.*;
 
 public class PostloginREPL {
 
-    ServerFacade server;
-    List<GameData> games;
+    private final ServerFacade server;
+    private List<GameData> games;
 
     public PostloginREPL(ServerFacade server) {
         this.server = server;
-        games = new ArrayList<>();
+        this.games = new ArrayList<>();
     }
 
     public void run() {
         boolean loggedIn = true;
         out.print(RESET_TEXT_COLOR + RESET_BG_COLOR);
+
         while (loggedIn) {
             String[] input = getUserInput();
+
             switch (input[0]) {
-                case "quit":
+                case "quit" -> {
                     return;
-                case "help":
-                    printHelpMenu();
-                    break;
-                case "logout":
-                    loggedIn = false;
-                    break;
-                case "list":
+                }
+                case "help" -> printHelpMenu();
+                case "logout" -> loggedIn = false;
+                case "list" -> {
                     refreshGames();
                     printGames();
-                    break;
-                case "create":
-                    if (input.length != 2) {
-                        out.println("Please provide a name");
-                        printCreate();
-                        break;
-                    }
-                    int gameID = server.createGame(input[1]);
-                    out.printf("Created game, ID: %d%n", gameID);
-                    break;
-                case "join":
-                    if (input.length != 3) {
-                        out.println("Please provide a game ID and color choice");
-                        printJoin();
-                        break;
-                    }
-                    GameData joinGame = games.get(Integer.parseInt(input[1]));
-                    if (server.joinGame(joinGame.gameID(), input[2].toUpperCase())) {
-                        out.println("You have joined the game");
-                        new BoardPrinter(joinGame.game().getBoard()).printBoard();
-                        break;
-                    } else {
-                        out.println("Game does not exist or color taken");
-                        printJoin();
-                        break;
-                    }
-                case "observe":
-                    if (input.length != 2) {
-                        out.println("Please provide a game ID");
-                        printObserve();
-                        break;
-                    }
-                    GameData observeGame = games.get(Integer.parseInt(input[1]));
-                    if (server.joinGame(observeGame.gameID(), null)) {
-                        out.println("You have joined the game as an observer");
-                        new BoardPrinter(observeGame.game().getBoard()).printBoard();
-                        break;
-                    } else {
-                        out.println("Game does not exist");
-                        printObserve();
-                        break;
-                    }
-                default:
+                }
+                case "create" -> handleCreate(input);
+                case "join" -> handleJoin(input);
+                case "observe" -> handleObserve(input);
+                default -> {
                     out.println("Command not recognized, please try again");
                     printHelpMenu();
-                    break;
+                }
             }
         }
 
-        PreloginREPL preloginREPL = new PreloginREPL(server);
-        preloginREPL.run();
+        new PreloginREPL(server).run();
+    }
+
+    private void handleCreate(String[] input) {
+        if (input.length != 2) {
+            out.println("Please provide a name");
+            printCreate();
+            return;
+        }
+
+        int gameID = server.createGame(input[1]);
+        out.printf("Created game, ID: %d%n", gameID);
+    }
+
+    private void handleJoin(String[] input) {
+        if (input.length != 3) {
+            out.println("Please provide a game ID and color choice");
+            printJoin();
+            return;
+        }
+
+        int gameIndex = Integer.parseInt(input[1]);
+        if (gameIndex >= games.size()) {
+            out.println("Invalid game ID");
+            return;
+        }
+
+        GameData game = games.get(gameIndex);
+        if (server.joinGame(game.gameID(), input[2].toUpperCase())) {
+            out.println("You have joined the game");
+            new BoardPrinter(game.game().getBoard()).printBoard();
+        } else {
+            out.println("Game does not exist or color taken");
+            printJoin();
+        }
+    }
+
+    private void handleObserve(String[] input) {
+        if (input.length != 2) {
+            out.println("Please provide a game ID");
+            printObserve();
+            return;
+        }
+
+        int gameIndex = Integer.parseInt(input[1]);
+        if (gameIndex >= games.size()) {
+            out.println("Invalid game ID");
+            return;
+        }
+
+        GameData game = games.get(gameIndex);
+        if (server.joinGame(game.gameID(), null)) {
+            out.println("You have joined the game as an observer");
+            new BoardPrinter(game.game().getBoard()).printBoard();
+        } else {
+            out.println("Game does not exist");
+            printObserve();
+        }
     }
 
     private String[] getUserInput() {
         out.print("\n[LOGGED IN] >>> ");
         Scanner scanner = new Scanner(System.in);
-        return scanner.nextLine().split(" ");
+        return scanner.nextLine().strip().split("\\s+");
     }
 
     private void refreshGames() {
-        games = new ArrayList<>();
-        HashSet<GameData> gameList = server.listGames();
-        games.addAll(gameList);
+        games = new ArrayList<>(server.listGames());
     }
 
     private void printGames() {
         for (int i = 0; i < games.size(); i++) {
             GameData game = games.get(i);
-            String whiteUser = game.whiteUsername() != null ? game.whiteUsername() : "open";
-            String blackUser = game.blackUsername() != null ? game.blackUsername() : "open";
-            out.printf("%d -- Game Name: %s  |  White User: %s  |  Black User: %s %n", i, game.gameName(), whiteUser, blackUser);
+            String whiteUser = Optional.ofNullable(game.whiteUsername()).orElse("open");
+            String blackUser = Optional.ofNullable(game.blackUsername()).orElse("open");
+
+            out.printf("%d -- Game Name: %s | White User: %s | Black User: %s%n",
+                    i, game.gameName(), whiteUser, blackUser);
         }
     }
 
     private void printHelpMenu() {
+        out.println("Available Commands:");
         printCreate();
         out.println("list - list all games");
         printJoin();
@@ -130,6 +148,4 @@ public class PostloginREPL {
     private void printObserve() {
         out.println("observe <ID> - observe a game");
     }
-
-
 }
