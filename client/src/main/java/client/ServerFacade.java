@@ -1,36 +1,101 @@
 package client;
 
+import com.google.gson.Gson;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+
 
 public class ServerFacade {
-    HttpCommunicator http;
-    WebSocketCommunicator ws;
-    String serverDomain;
+    String baseURL = "http://localhost:8080";
     String authToken;
 
-    public ServerFacade() throw Exception {
-        this("localhost:8080");
+    public ServerFacade() {
     }
 
-    public ServerFacade(String serverDomain) throws Exception {
-        this.serverDomain = serverDomain;
-        http = new HttpCommunicator(this, serverDomain);
+    public boolean register(String username, String password, String email) {
+        var body = Map.of("username", username, "password", password, "email", email);
+        var jsonBody = new Gson().toJson(body);
+        Map resp = request("POST", "/user", jsonBody);
+        if (resp.containsKey("Error")) {
+            return false;
+        }
+        authToken = (String) resp.get("authToken");
+        return true;
     }
 
-    protected String getAuthToken() {
-        return authToken;
+    public boolean login(String username, String password) {
+        var body = Map.of("username", username, "password", password);
+        var jsonBody = new Gson().toJson(body);
+        Map resp = request("POST", "/session", jsonBody);
+        if (resp.containsKey("Error")) {
+            return false;
+        }
+        authToken = (String) resp.get("authToken");
+        return true;
     }
 
-    protected void setAuthToken() {
-        this.authToken = authToken;
-    }
-
-    public boolean register(String username, String password) {
-        return http.login(username, password);
+    public boolean logout() {
+        Map resp = request("DELETE", "/session");
+        if (resp.containsKey("Error")) {
+        }
+        authToken = null;
+        return true;
     }
 
     public int createGame(String gameName) {
-        return http.createGame(gameName);
+        var body = Map.of("gameName", gameName);
+        var jsonBody = new Gson().toJson(body);
+        Map resp = request("POST", "/game", jsonBody);
+        double gameID = (double) resp.get("gameID");
+        return (int) gameID;
+    }
+
+    private Map request (String method, String endpoint) {
+        Map respMap;
+        try {
+            URI uri = new URI(baseURL + endpoint);
+            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
+            http.setRequestMethod(method);
+
+            if (authToken != null) {
+                http.addRequestProperty("authorization", authToken);
+            }
+
+            if (!Objects.equals(body, null)) {
+                http.setDoOutput(true);
+                http.addRequestProperty("Content-Type", "application/json");
+                try (var outputStream = http.getOutputStream()) {
+                    outputStream.write(body.getBytes());
+                }
+            }
+            http.connect();
+            try {
+                if (http.getResponseCode() == 401) {
+                    return Map.of("Error", 401);
+                }
+            } catch (IOException e) {
+                return Map.of("Error", 401);
+            }
+
+
+            try (InputStream respBody = http.getInputStream()) {
+                InputStreamReader inputStreamReader = new InputStreamReader(respBody);
+                respMap = new Gson().fromJson(inputStreamReader, Map.class);
+            }
+
+        } catch (URISyntaxException | IOException e) {
+            return Map.of("Error", e.getMessage());
+        }
+
+        return respMap;
     }
 
 
+}
 }
