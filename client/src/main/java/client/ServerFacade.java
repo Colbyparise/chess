@@ -35,12 +35,6 @@ public class ServerFacade {
         return true;
     }
 
-    /**
-     *
-     * @param username
-     * @param password
-     * @return success
-     */
     public boolean login(String username, String password) {
         var body = Map.of("username", username, "password", password);
         var jsonBody = new Gson().toJson(body);
