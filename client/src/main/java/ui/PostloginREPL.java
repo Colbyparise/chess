@@ -129,12 +129,12 @@ public class PostloginREPL {
     private void printHelpMenu() {
         out.println("Available Commands:");
         printCreate();
-        out.println("list - list all games");
+        out.println("list - games");
         printJoin();
         printObserve();
-        out.println("logout - log out of current user");
+        out.println("logout - log out of user");
         out.println("quit - stop playing");
-        out.println("help - show this menu");
+        out.println("help - show possible commands");
     }
 
     private void printCreate() {

@@ -76,7 +76,7 @@ public class PreloginREPL {
         out.println("\nAvailable Commands:");
         printRegisterUsage();
         printLoginUsage();
-        out.println("quit  - Exit the game");
+        out.println("quit  - Exit game");
         out.println("help  - Display available commands");
     }
 
