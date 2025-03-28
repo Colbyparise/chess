@@ -13,11 +13,10 @@ import java.util.*;
 
 public class ServerFacade {
 
-    String baseURL = "http://localhost:8080";
-    String authToken;
+    private String baseURL = "http://localhost:8080";
+    private String authToken;
 
-    public ServerFacade() {
-    }
+    public ServerFacade() {}
 
     public ServerFacade(String url) {
         baseURL = url;
@@ -67,70 +66,60 @@ public class ServerFacade {
 
     public HashSet<GameData> listGames() {
         String resp = requestString("GET", "/game");
-        if (resp.contains("Error")) {
-            return HashSet.newHashSet(8);
+        if (resp.startsWith("Error")) {
+            return new HashSet<>();
         }
         GamesList games = new Gson().fromJson(resp, GamesList.class);
-
         return games.games();
     }
 
     public boolean joinGame(int gameId, String playerColor) {
-        Map body;
-        if (playerColor != null) {
-            body = Map.of("gameID", gameId, "playerColor", playerColor);
-        } else {
-            body = Map.of("gameID", gameId);
-        }
+        Map body = playerColor != null
+                ? Map.of("gameID", gameId, "playerColor", playerColor)
+                : Map.of("gameID", gameId);
+
         var jsonBody = new Gson().toJson(body);
         Map resp = request("PUT", "/game", jsonBody);
         return !resp.containsKey("Error");
     }
 
-    private Map request (String method, String endpoint) {
+    private InputStream requestRaw(String method, String endpoint, String body) throws IOException, URISyntaxException {
+        URI uri = new URI(baseURL + endpoint);
+        HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
+        http.setRequestMethod(method);
+
+        if (authToken != null) {
+            http.addRequestProperty("Authorization", authToken);
+        }
+
+        if (body != null) {
+            http.setDoOutput(true);
+            http.addRequestProperty("Content-Type", "application/json");
+            try (var outputStream = http.getOutputStream()) {
+                outputStream.write(body.getBytes());
+            }
+        }
+
+        http.connect();
+
+        if (http.getResponseCode() == 401) {
+            throw new IOException("Unauthorized (401)");
+        }
+
+        return http.getInputStream();
+    }
+
+    private Map request(String method, String endpoint) {
         return request(method, endpoint, null);
     }
 
     private Map request(String method, String endpoint, String body) {
-        Map respMap;
-        try {
-            URI uri = new URI(baseURL + endpoint);
-            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
-            http.setRequestMethod(method);
-
-            if (authToken != null) {
-                http.addRequestProperty("authorization", authToken);
-            }
-
-            if (!Objects.equals(body, null)) {
-                http.setDoOutput(true);
-                http.addRequestProperty("Content-Type", "application/json");
-                try (var outputStream = http.getOutputStream()) {
-                    outputStream.write(body.getBytes());
-                }
-            }
-
-            http.connect();
-
-            try {
-                if (http.getResponseCode() == 401) {
-                    return Map.of("Error", 401);
-                }
-            } catch (IOException e) {
-                return Map.of("Error", 401);
-            }
-
-
-            try (InputStream respBody = http.getInputStream()) {
-                InputStreamReader inputStreamReader = new InputStreamReader(respBody);
-                respMap = new Gson().fromJson(inputStreamReader, Map.class);
-            }
-
-        } catch (URISyntaxException | IOException e) {
+        try (InputStream respBody = requestRaw(method, endpoint, body)) {
+            InputStreamReader inputStreamReader = new InputStreamReader(respBody);
+            return new Gson().fromJson(inputStreamReader, Map.class);
+        } catch (IOException | URISyntaxException e) {
             return Map.of("Error", e.getMessage());
         }
-
-        return respMap;
     }
 
     private String requestString(String method, String endpoint) {
@@ -138,45 +127,12 @@ public class ServerFacade {
     }
 
     private String requestString(String method, String endpoint, String body) {
-        String resp;
-        try {
-            URI uri = new URI(baseURL + endpoint);
-            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
-            http.setRequestMethod(method);
-
-            if (authToken != null) {
-                http.addRequestProperty("authorization", authToken);
-            }
-
-            if (!Objects.equals(body, null)) {
-                http.setDoOutput(true);
-                http.addRequestProperty("Content-Type", "application/json");
-                try (var outputStream = http.getOutputStream()) {
-                    outputStream.write(body.getBytes());
-                }
-            }
-
-            http.connect();
-
-            try {
-                if (http.getResponseCode() == 401) {
-                    return "Error: 401";
-                }
-            } catch (IOException e) {
-                return "Error: 401";
-            }
-
-
-            try (InputStream respBody = http.getInputStream()) {
-                InputStreamReader inputStreamReader = new InputStreamReader(respBody);
-                resp = readerToString(inputStreamReader);
-            }
-
-        } catch (URISyntaxException | IOException e) {
+        try (InputStream respBody = requestRaw(method, endpoint, body)) {
+            InputStreamReader inputStreamReader = new InputStreamReader(respBody);
+            return readerToString(inputStreamReader);
+        } catch (IOException | URISyntaxException e) {
             return String.format("Error: %s", e.getMessage());
         }
-
-        return resp;
     }
 
     private String readerToString(InputStreamReader reader) {
@@ -189,6 +145,5 @@ public class ServerFacade {
         } catch (IOException e) {
             return "";
         }
-
     }
 }
