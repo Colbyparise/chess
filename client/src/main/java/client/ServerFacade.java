@@ -81,14 +81,29 @@ public class ServerFacade {
     }
 
     public boolean joinGame(int gameId, String color) {
-        Map<String, Object> payload = (color == null)
-                ? Map.of("gameID", gameId)
-                : Map.of("gameID", gameId, "playerColor", color);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("gameID", gameId);
+
+        if (color != null) {
+            payload.put("playerColor", color);
+        } else {
+            payload.put("observe", true);
+        }
 
         String body = new Gson().toJson(payload);
         Map<String, Object> response = sendRequest("PUT", "/game", body);
 
-        return !response.containsKey("Error");
+        if (response.containsKey("Error")) {
+            if (response.get("Error").equals(401)) {
+                return false; // Unauthorized
+            } else if (response.get("Error").equals("Game does not exist")) {
+                return false; // Game does not exist
+            } else {
+                return true; // Observation successful
+            }
+        } else {
+            return true; // Join successful
+        }
     }
 
     // --- Internal helpers below ---

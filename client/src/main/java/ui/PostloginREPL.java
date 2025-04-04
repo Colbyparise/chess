@@ -93,10 +93,11 @@ public class PostloginREPL {
                         out.println("Now observing the game.");
                         new BoardPrinter(gameToObserve.game().getBoard()).printBoard();
                     } else {
-                        out.println("Unable to observe: game doesn't exist.");
+                        out.println("Unable to observe: game is full or does not exist.");
                         printObserveUsage();
                     }
                     break;
+
 
                 default:
                     out.println("Unknown command. Type 'help' for a list of valid commands.");
