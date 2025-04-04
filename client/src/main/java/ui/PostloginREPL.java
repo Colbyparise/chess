@@ -55,17 +55,14 @@ public class PostloginREPL {
 
                 case "join":
                     if (userCommand.length != 3) {
-                        out.println("Provide a game ID and a color.");
+                        out.println("Provide a game index and a color.");
                         printJoinUsage();
                         break;
                     }
                     updateGameList();
-                    int joinId = parseGameId(userCommand[1]);
-                    if (joinId == -1) break;
-
-                    GameData gameToJoin = locateGameById(joinId);
+                    GameData gameToJoin = getGameByIndex(userCommand[1]);
                     if (gameToJoin == null) {
-                        out.println("Game ID not found.");
+                        out.println("Game not found.");
                         break;
                     }
 
@@ -81,17 +78,14 @@ public class PostloginREPL {
 
                 case "observe":
                     if (userCommand.length != 2) {
-                        out.println("Provide a game ID to observe.");
+                        out.println("Provide a game index to observe.");
                         printObserveUsage();
                         break;
                     }
                     updateGameList();
-                    int observeId = parseGameId(userCommand[1]);
-                    if (observeId == -1) break;
-
-                    GameData gameToObserve = locateGameById(observeId);
+                    GameData gameToObserve = getGameByIndex(userCommand[1]);
                     if (gameToObserve == null) {
-                        out.println("Game ID not found.");
+                        out.println("Game not found.");
                         break;
                     }
 
@@ -132,19 +126,17 @@ public class PostloginREPL {
         }
     }
 
-    private GameData locateGameById(int id) {
-        return availableGames.stream()
-                .filter(game -> game.gameID() == id)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private int parseGameId(String idStr) {
+    private GameData getGameByIndex(String indexStr) {
         try {
-            return Integer.parseInt(idStr);
+            int index = Integer.parseInt(indexStr);
+            if (index < 0 || index >= availableGames.size()) {
+                out.println("Invalid game index.");
+                return null;
+            }
+            return availableGames.get(index);
         } catch (NumberFormatException e) {
-            out.println("Invalid game ID format. Must be a number.");
-            return -1;
+            out.println("Invalid index format. Must be a number.");
+            return null;
         }
     }
 
@@ -163,10 +155,10 @@ public class PostloginREPL {
     }
 
     private void printJoinUsage() {
-        out.println("join <ID> [WHITE|BLACK] - a game");
+        out.println("join <INDEX> [WHITE|BLACK] - a game");
     }
 
     private void printObserveUsage() {
-        out.println("observe <ID> - a game");
+        out.println("observe <INDEX> - a game");
     }
 }

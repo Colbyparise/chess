@@ -42,10 +42,6 @@ public class GameService {
         AuthData authData = validateAuth(authToken);
         GameData gameData = getGameData(gameID);
 
-        if (color == null || color.isBlank()) {
-            // Observer: No need to modify the game state
-            return true;
-        }
 
         validateColor(color);
 
