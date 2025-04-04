@@ -9,82 +9,89 @@ import static ui.EscapeSequences.*;
 
 public class PreloginREPL {
 
-    private final ServerFacade server;
-    private final PostloginREPL postloginREPL;
+    private final ServerFacade serverFacade;
+    private final PostloginREPL postLoginUI;
 
     public PreloginREPL(ServerFacade server) {
-        this.server = server;
-        this.postloginREPL = new PostloginREPL(server);
+        this.serverFacade = server;
+        this.postLoginUI = new PostloginREPL(server);
     }
 
     public void run() {
-        boolean loggedIn = false;
+        boolean isAuthenticated = false;
         out.print(RESET_TEXT_COLOR + RESET_BG_COLOR);
-        out.println("Welcome to Chess! Type 'help' for available commands.");
+        out.println("Welcome to 240 chess. Type help to get started.");
 
-        while (!loggedIn) {
-            String[] input = getUserInput();
+        while (!isAuthenticated) {
+            String[] commandArgs = promptInput();
+            String command = commandArgs[0];
 
-            switch (input[0].toLowerCase()) {
-                case "quit" -> {
+            switch (command) {
+                case "quit":
                     return;
-                }
-                case "help" -> {
-                    printHelpMenu();
-                }
-                case "login" -> {
-                    if (input.length != 3) {
-                        out.println("Please provide a username and password.");
-                        printLoginUsage();
-                    } else if (server.login(input[1], input[2])) {
-                        out.println("You are now logged in.");
-                        loggedIn = true;
-                    } else {
-                        out.println("Invalid username or password. Please try again.");
-                        printLoginUsage();
+
+                case "help":
+                    showHelpMenu();
+                    break;
+
+                case "login":
+                    if (commandArgs.length != 3) {
+                        out.println("Missing arguments: username and password required.");
+                        showLoginUsage();
+                        break;
                     }
-                }
-                case "register" -> {
-                    if (input.length != 4) {
-                        out.println("Please provide a username, password, and email.");
-                        printRegisterUsage();
-                    } else if (server.register(input[1], input[2], input[3])) {
-                        out.println("Registration successful. You are now logged in.");
-                        loggedIn = true;
+                    if (serverFacade.login(commandArgs[1], commandArgs[2])) {
+                        out.println("Login successful!");
+                        isAuthenticated = true;
                     } else {
-                        out.println("Username already taken. Please try a different one.");
-                        printRegisterUsage();
+                        out.println("Login failed: invalid credentials.");
+                        showLoginUsage();
                     }
-                }
-                default -> {
-                    out.println("Unknown command. Type 'help' for available commands.");
-                    printHelpMenu();
-                }
+                    break;
+
+                case "register":
+                    if (commandArgs.length != 4) {
+                        out.println("Missing arguments: username, password, and email required.");
+                        showRegisterUsage();
+                        break;
+                    }
+                    if (serverFacade.register(commandArgs[1], commandArgs[2], commandArgs[3])) {
+                        out.println("Registration successful! You are now logged in.");
+                        isAuthenticated = true;
+                    } else {
+                        out.println("Username already taken. Please choose a different one.");
+                        showRegisterUsage();
+                    }
+                    break;
+
+                default:
+                    out.println("Unknown command.");
+                    showHelpMenu();
+                    break;
             }
         }
 
-        postloginREPL.run();
+        postLoginUI.run();
     }
 
-    private String[] getUserInput() {
+    private String[] promptInput() {
         out.print("\n[LOGGED OUT] >>> ");
         Scanner scanner = new Scanner(System.in);
-        return scanner.nextLine().split(" ");
+        return scanner.nextLine().trim().split(" ");
     }
 
-    private void printHelpMenu() {
-        out.println("\nAvailable Commands:");
-        printRegisterUsage();
-        printLoginUsage();
-        out.println("quit  - Exit game");
-        out.println("help  - Display available commands");
+    private void showHelpMenu() {
+        showRegisterUsage();
+        showLoginUsage();
+        out.println("quit - playing chess");
+        out.println("help - with possible commands");
     }
 
-    private void printRegisterUsage() {
-        out.println("register <USERNAME> <PASSWORD> <EMAIL>  - Create a new user account");
+    private void showRegisterUsage() {
+        out.println("register <USERNAME> <PASSWORD> <EMAIL> - to create an account");
     }
 
-    private void printLoginUsage() {
-        out.println("login <USERNAME> <PASSWORD>  - Log into an existing account");
+    private void showLoginUsage() {
+        out.println("login <USERNAME> <PASSWORD> - to play chess");
     }
 }

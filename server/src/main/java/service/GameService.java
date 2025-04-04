@@ -5,7 +5,6 @@ import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
@@ -43,12 +42,17 @@ public class GameService {
         AuthData authData = validateAuth(authToken);
         GameData gameData = getGameData(gameID);
 
+        if (color == null || color.isBlank()) {
+            // Observer: No need to modify the game state
+            return true;
+        }
+
         validateColor(color);
 
         String updatedWhiteUser = gameData.whiteUsername();
         String updatedBlackUser = gameData.blackUsername();
 
-        if (Objects.equals(color, "WHITE")) {
+        if (color.equals("WHITE")) {
             if (updatedWhiteUser != null) {
                 return false;
             } else {
@@ -65,6 +69,7 @@ public class GameService {
         gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
         return true;
     }
+
 
     public void clear() {
         gameDAO.clear();

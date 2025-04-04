@@ -8,110 +8,105 @@ import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 public class ServerFacadeTests {
 
-    private static Server server;
-
-    private ServerFacade facade;
-    static int port;
+    private static Server testServer;
+    private ServerFacade client;
+    private static int serverPort;
 
     @BeforeAll
-    public static void init() {
-        server = new Server();
-        port = server.run(0);
-        System.out.println("Started test HTTP server on " + port);
+    public static void startServer() {
+        testServer = new Server();
+        serverPort = testServer.run(0);
+        System.out.println("Test server started on port " + serverPort);
     }
 
     @AfterAll
-    static void stopServer() {
-        server.stop();
+    public static void shutdownServer() {
+        testServer.stop();
     }
 
-
     @BeforeEach
-    void setup() throws Exception {
-        server.clearDB();
-        facade = new ServerFacade();
+    public void resetBeforeTest() throws Exception {
+        testServer.clearDB();
+        client = new ServerFacade();
     }
 
     @AfterEach
-    void cleanup() {
-        server.clearDB();
+    public void resetAfterTest() {
+        testServer.clearDB();
     }
 
     @Test
-    public void registerPositive() {
-        assertTrue(facade.register("username", "password", "email"));
+    public void testSuccessfulRegistration() {
+        assertTrue(client.register("alice", "pass123", "alice@email.com"));
     }
 
     @Test
-    public void registerNegative() {
-        facade.register("username", "password", "email");
-        assertFalse(facade.register("username", "password", "email"));
+    public void testDuplicateRegistrationFails() {
+        client.register("bob", "secret", "bob@email.com");
+        assertFalse(client.register("bob", "secret", "bob@email.com"));
     }
 
     @Test
-    public void loginPositive() {
-        facade.register("username", "password", "email");
-        assertTrue(facade.login("username", "password"));
+    public void testLoginWithCorrectCredentials() {
+        client.register("carol", "secure", "carol@email.com");
+        assertTrue(client.login("carol", "secure"));
     }
 
     @Test
-    public void loginNegative() {
-        facade.register("username", "password", "email");
-        assertFalse(facade.login("username", "pass"));
+    public void testLoginWithIncorrectPassword() {
+        client.register("dave", "mypass", "dave@email.com");
+        assertFalse(client.login("dave", "wrongpass"));
     }
 
     @Test
-    public void logoutPositive() {
-        facade.register("username", "password", "email");
-        assertTrue(facade.logout());
+    public void testLogoutWhenLoggedIn() {
+        client.register("eve", "wordpass", "eve@email.com");
+        assertTrue(client.logout());
     }
 
     @Test
-    public void logoutNegative() {
-        assertFalse(facade.logout());
+    public void testLogoutWithoutLogin() {
+        assertFalse(client.logout());
     }
 
     @Test
-    public void createGamePositive() {
-        facade.register("username", "password", "email");
-        assertTrue(facade.createGame("gameName") >= 0);
+    public void testCreateGameWhenAuthenticated() {
+        client.register("frank", "pw", "frank@email.com");
+        int gameId = client.createGame("Chess Match");
+        assertTrue(gameId >= 0);
     }
 
     @Test
-    public void createGameNegative() {
-        assertEquals(-1, facade.createGame("gameName"));
+    public void testCreateGameWithoutAuthentication() {
+        assertEquals(-1, client.createGame("Unauthorized Game"));
     }
 
     @Test
-    public void listGamesPositive() {
-        facade.register("username", "password", "email");
-        facade.createGame("gameName");
-        assertEquals(1, facade.listGames().size());
+    public void testListGamesWithGamesPresent() {
+        client.register("grace", "pass", "grace@email.com");
+        client.createGame("Epic Battle");
+        assertEquals(1, client.listGames().size());
     }
 
     @Test
-    public void listGamesNegative() {
-        assertEquals(facade.listGames(), HashSet.newHashSet(8));
+    public void testListGamesWithNoGames() {
+        assertEquals(HashSet.newHashSet(8), client.listGames());
     }
 
     @Test
-    public void joinGamePositive() {
-        facade.register("username", "password", "email");
-        int id = facade.createGame("gameName");
-        assertTrue(facade.joinGame(id, "WHITE"));
+    public void testJoinGameSuccessfully() {
+        client.register("harry", "pass", "harry@email.com");
+        int gameId = client.createGame("Classic Game");
+        assertTrue(client.joinGame(gameId, "WHITE"));
     }
 
     @Test
-    public void joinGameNegative() {
-        facade.register("username", "password", "email");
-        int id = facade.createGame("gameName");
-        facade.joinGame(id, "WHITE");
-        assertFalse(facade.joinGame(id, "WHITE"));
+    public void testJoinGameWithTakenColor() {
+        client.register("ian", "pw", "ian@email.com");
+        int gameId = client.createGame("Reserved Game");
+        client.joinGame(gameId, "WHITE");
+        assertFalse(client.joinGame(gameId, "WHITE"));
     }
-
-
-
 }
