@@ -12,10 +12,12 @@ import java.util.*;
 
 public class ServerFacade {
 
-    private String apiBase = "http://localhost:8080";
+    private String apiBase;
     private String token;
 
-    public ServerFacade() {}
+    public ServerFacade() {
+        this("http://localhost:8080"); // default
+    }
 
     public ServerFacade(String url) {
         this.apiBase = url;
@@ -94,16 +96,9 @@ public class ServerFacade {
         Map<String, Object> response = sendRequest("PUT", "/game", body);
 
         if (response.containsKey("Error")) {
-            if (response.get("Error").equals(401)) {
-                return false; // Unauthorized
-            } else if (response.get("Error").equals("Game does not exist")) {
-                return false; // Game does not exist
-            } else {
-                return true; // Observation successful
-            }
-        } else {
-            return true; // Join successful
+            return false;
         }
+        return true;
     }
 
     // --- Internal helpers below ---

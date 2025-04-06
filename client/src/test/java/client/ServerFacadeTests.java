@@ -26,9 +26,9 @@ public class ServerFacadeTests {
     }
 
     @BeforeEach
-    public void resetBeforeTest() throws Exception {
-        testServer.clearDB();
-        client = new ServerFacade();
+    public void setup() {
+        String dynamicUrl = "http://localhost:" + serverPort;
+        client = new ServerFacade(dynamicUrl);
     }
 
     @AfterEach
