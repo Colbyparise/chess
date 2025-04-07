@@ -87,7 +87,7 @@ public class ServerFacade {
         payload.put("gameID", gameId);
 
         if (color != null) {
-            payload.put("playerColor", color);
+            payload.put("playerColor", color.toUpperCase());
         } else {
             payload.put("observe", true);
         }
@@ -95,10 +95,17 @@ public class ServerFacade {
         String body = new Gson().toJson(payload);
         Map<String, Object> response = sendRequest("PUT", "/game", body);
 
-        if (response.containsKey("Error")) {
-            return false;
+        return !response.containsKey("Error");
+    }
+    public GameData getGame(int gameID) {
+        String path = "/game/" + gameID;
+        String json = sendRawRequest("GET", path);
+
+        if (json.contains("Error")) {
+            return null;
         }
-        return true;
+
+        return new Gson().fromJson(json, GameData.class);
     }
 
     // --- Internal helpers below ---

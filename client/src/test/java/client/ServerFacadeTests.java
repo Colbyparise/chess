@@ -9,31 +9,31 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ServerFacadeTests {
 
-    private static Server testServer;
+    private static Server server;
     private ServerFacade client;
-    private static int serverPort;
+    private static int port;
 
     @BeforeAll
     public static void startServer() {
-        testServer = new Server();
-        serverPort = testServer.run(0);
-        System.out.println("Test server started on port " + serverPort);
+        server = new Server();
+        port = server.run(0);
+        System.out.println("Test server started on port " + port);
     }
 
     @AfterAll
     public static void shutdownServer() {
-        testServer.stop();
+        server.stop();
     }
 
     @BeforeEach
     public void setup() {
-        String dynamicUrl = "http://localhost:" + serverPort;
+        String dynamicUrl = "http://localhost:" + port;
         client = new ServerFacade(dynamicUrl);
     }
 
     @AfterEach
     public void resetAfterTest() {
-        testServer.clearDB();
+        server.clearDB();
     }
 
     @Test

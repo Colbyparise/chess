@@ -90,12 +90,13 @@ public class PostloginREPL {
                     }
 
                     if (serverFacade.joinGame(gameToObserve.gameID(), null)) {
-                        out.println("Now observing the game.");
-                        new BoardPrinter(gameToObserve.game().getBoard()).printBoard();
-                    } else {
-                        out.println("Unable to observe: game is full or does not exist.");
-                        printObserveUsage();
-                    }
+                    out.println("Now observing the game.");
+                    GameData freshGame = serverFacade.getGame(gameToObserve.gameID());
+                    new BoardPrinter(freshGame.game().getBoard()).printBoard();
+                } else {
+                    out.println("Unable to observe: game is full or does not exist.");
+                    printObserveUsage();
+                }
                     break;
 
 
