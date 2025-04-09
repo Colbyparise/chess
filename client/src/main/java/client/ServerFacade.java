@@ -9,198 +9,57 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
-
 public class ServerFacade {
 
-    private String apiBase;
-    private String token;
+    HttpCommunicator http;
+    WebsocketCommunicator ws;
+    String serverDomain;
+    String authToken;
 
-    public ServerFacade() {
-        this("http://localhost:8080"); // default
+    public ServerFacade() throws Exception {
+        this("localhost:8080");
     }
 
-    public ServerFacade(String url) {
-        this.apiBase = url;
+    public ServerFacade(String serverDomain) throws Exception {
+        this.serverDomain = serverDomain;
+        http = new HttpCommunicator(this, serverDomain);
+        ws = new WebsocketCommunicator(serverDomain);
+    }
+
+    protected String getAuthToken() {
+        return authToken;
+    }
+
+    protected void setAuthToken(String authToken) {
+        this.authToken = authToken;
     }
 
     public boolean register(String username, String password, String email) {
-        Map<String, String> payload = Map.of(
-                "username", username,
-                "password", password,
-                "email", email
-        );
-
-        String requestBody = new Gson().toJson(payload);
-        Map<String, Object> response = sendRequest("POST", "/user", requestBody);
-
-        if (response.containsKey("Error")) return false;
-
-        token = (String) response.get("authToken");
-        return true;
+        return http.register(username, password, email);
     }
 
     public boolean login(String username, String password) {
-        Map<String, String> payload = Map.of(
-                "username", username,
-                "password", password
-        );
-
-        String requestBody = new Gson().toJson(payload);
-        Map<String, Object> response = sendRequest("POST", "/session", requestBody);
-
-        if (response.containsKey("Error")) return false;
-
-        token = (String) response.get("authToken");
-        return true;
+        return http.login(username, password);
     }
 
     public boolean logout() {
-        Map<String, Object> response = sendRequest("DELETE", "/session");
-        if (response.containsKey("Error")) return false;
-
-        token = null;
-        return true;
+        return http.logout();
     }
 
-    public int createGame(String name) {
-        String body = new Gson().toJson(Map.of("gameName", name));
-        Map<String, Object> response = sendRequest("POST", "/game", body);
-
-        if (response.containsKey("Error")) return -1;
-
-        return ((Double) response.get("gameID")).intValue();
+    public int createGame(String gameName) {
+        return http.createGame(gameName);
     }
 
     public HashSet<GameData> listGames() {
-        String result = sendRawRequest("GET", "/game");
-
-        if (result.contains("Error")) {
-            return new HashSet<>();
-        }
-
-        GamesList parsedList = new Gson().fromJson(result, GamesList.class);
-        return parsedList.games();
+        return http.listGames();
     }
 
-    public boolean joinGame(int gameId, String color) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("gameID", gameId);
-
-        if (color != null) {
-            payload.put("playerColor", color.toUpperCase());
-        } else {
-            payload.put("observe", true);
-        }
-
-        String body = new Gson().toJson(payload);
-        Map<String, Object> response = sendRequest("PUT", "/game", body);
-
-        return !response.containsKey("Error");
-    }
-    public GameData getGame(int gameID) {
-        String path = "/game/" + gameID;
-        String json = sendRawRequest("GET", path);
-
-        if (json.contains("Error")) {
-            return null;
-        }
-
-        return new Gson().fromJson(json, GameData.class);
+    public boolean joinGame(int gameId, String playerColor) {
+        return http.joinGame(gameId, playerColor);
     }
 
-    // --- Internal helpers below ---
-
-    private Map<String, Object> sendRequest(String method, String path) {
-        return sendRequest(method, path, null);
+    public void sendWSMessage(String message) {
+        ws.sendMessage(message);
     }
 
-    private Map<String, Object> sendRequest(String method, String path, String requestBody) {
-        Map<String, Object> parsedResponse;
-
-        try {
-            URI target = new URI(apiBase + path);
-            HttpURLConnection connection = (HttpURLConnection) target.toURL().openConnection();
-            connection.setRequestMethod(method);
-
-            if (token != null) {
-                connection.setRequestProperty("authorization", token);
-            }
-
-            if (requestBody != null) {
-                connection.setDoOutput(true);
-                connection.setRequestProperty("Content-Type", "application/json");
-                try (OutputStream output = connection.getOutputStream()) {
-                    output.write(requestBody.getBytes());
-                }
-            }
-
-            connection.connect();
-
-            if (connection.getResponseCode() == 401) {
-                return Map.of("Error", 401);
-            }
-
-            try (InputStream input = connection.getInputStream()) {
-                InputStreamReader reader = new InputStreamReader(input);
-                parsedResponse = new Gson().fromJson(reader, Map.class);
-            }
-
-        } catch (URISyntaxException | IOException e) {
-            return Map.of("Error", e.getMessage());
-        }
-
-        return parsedResponse;
-    }
-
-    private String sendRawRequest(String method, String path) {
-        return sendRawRequest(method, path, null);
-    }
-
-    private String sendRawRequest(String method, String path, String requestBody) {
-        try {
-            URI target = new URI(apiBase + path);
-            HttpURLConnection connection = (HttpURLConnection) target.toURL().openConnection();
-            connection.setRequestMethod(method);
-
-            if (token != null) {
-                connection.setRequestProperty("authorization", token);
-            }
-
-            if (requestBody != null) {
-                connection.setDoOutput(true);
-                connection.setRequestProperty("Content-Type", "application/json");
-                try (OutputStream output = connection.getOutputStream()) {
-                    output.write(requestBody.getBytes());
-                }
-            }
-
-            connection.connect();
-
-            if (connection.getResponseCode() == 401) {
-                return "Error: 401";
-            }
-
-            try (InputStream input = connection.getInputStream()) {
-                return readStreamToString(new InputStreamReader(input));
-            }
-
-        } catch (URISyntaxException | IOException e) {
-            return "Error: " + e.getMessage();
-        }
-    }
-
-    private String readStreamToString(InputStreamReader reader) {
-        StringBuilder output = new StringBuilder();
-
-        try {
-            int ch;
-            while ((ch = reader.read()) != -1) {
-                output.append((char) ch);
-            }
-        } catch (IOException e) {
-            return "";
-        }
-
-        return output.toString();
-    }
 }
