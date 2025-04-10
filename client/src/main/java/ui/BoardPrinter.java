@@ -13,11 +13,11 @@ public class BoardPrinter {
 
     ChessGame game;
 
-    BoardPrinter(ChessGame game) {
+    public BoardPrinter(ChessGame game) {
         this.game = game;
     }
 
-    void updateGame(ChessGame game) {
+    public void updateGame(ChessGame game) {
         this.game = game;
     }
 
@@ -26,7 +26,7 @@ public class BoardPrinter {
      * @param color team color to print as, if null, prints both.
      * @param selectedPos a piece to highlight all legal moves, if null, a plain board is printed
      */
-    void printBoard(ChessGame.TeamColor color, ChessPosition selectedPos) {
+    public void printBoard(ChessGame.TeamColor color, ChessPosition selectedPos) {
         StringBuilder output = new StringBuilder();
         output.append(SET_TEXT_BOLD);
 
@@ -57,6 +57,7 @@ public class BoardPrinter {
         }
         output.append(RESET_TEXT_BOLD_FAINT);
         out.println(output);
+        out.printf("Turn: %s\n", game.getTeamTurn().toString());
     }
 
     private String startingRow(boolean reversed) {
@@ -114,16 +115,6 @@ public class BoardPrinter {
                 return SET_BG_COLOR_RED;
             }
         }
-    }
-
-    private ChessPosition reversePosition(ChessPosition pos) {
-        if (pos == null) {
-            return null;
-        }
-        int revRow = (pos.getRow()- 9) * -1;
-        int revCol = (pos.getColumn()- 9) * -1;
-
-        return new ChessPosition(revRow, revCol);
     }
 
     private String piece(int row, int column) {

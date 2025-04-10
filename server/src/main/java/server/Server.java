@@ -5,6 +5,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import service.GameService;
 import service.UserService;
 import spark.*;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
@@ -20,6 +21,7 @@ public class Server {
     UserHandler userHandler;
     GameHandler gameHandler;
 
+    // {Session: gameID}
     static ConcurrentHashMap<Session, Integer> gameSessions = new ConcurrentHashMap<>();
 
     public Server() {
@@ -43,6 +45,8 @@ public class Server {
         Spark.port(desiredPort);
 
         Spark.staticFiles.location("web");
+
+        Spark.webSocket("/connect", WebsocketHandler.class);
 
         Spark.delete("/db", this::clear);
         Spark.post("/user", userHandler::handleUserRegistration);

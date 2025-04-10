@@ -4,8 +4,7 @@ import chess.ChessGame;
 import chess.ChessMove;
 import com.google.gson.Gson;
 import model.GameData;
-import webSocketMessages.userCommands.UserGameCommand;
-
+import websocket.commands.*;
 import java.util.*;
 
 public class ServerFacade {

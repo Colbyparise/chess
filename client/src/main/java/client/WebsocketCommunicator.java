@@ -2,21 +2,17 @@ package client;
 
 import chess.ChessGame;
 import com.google.gson.Gson;
-import ui.BoardPrinter;
 import ui.GameplayREPL;
-import webSocketMessages.serverMessages.Error;
-import webSocketMessages.serverMessages.LoadGame;
-import webSocketMessages.serverMessages.Notification;
-import webSocketMessages.serverMessages.ServerMessage;
+import websocket.messages.Error;
+import websocket.messages.LoadGame;
+import websocket.messages.Notification;
 
 import javax.websocket.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.LinkedList;
 
 import static ui.EscapeSequences.ERASE_LINE;
-import static ui.EscapeSequences.moveCursorToLocation;
 
 public class WebsocketCommunicator extends Endpoint {
 
