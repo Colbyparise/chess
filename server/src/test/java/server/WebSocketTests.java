@@ -4,6 +4,7 @@ import chess.*;
 import org.junit.jupiter.api.*;
 import passoff.model.*;
 import passoff.websocket.*;
+import passoff.server.*;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ServerMessage;
 
