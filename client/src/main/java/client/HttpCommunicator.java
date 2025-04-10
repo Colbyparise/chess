@@ -101,23 +101,7 @@ public class HttpCommunicator {
     private Map request(String method, String endpoint, String body) {
         Map respMap;
         try {
-            URI uri = new URI(baseURL + endpoint);
-            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
-            http.setRequestMethod(method);
-
-            if (facade.getAuthToken() != null) {
-                http.addRequestProperty("authorization", facade.getAuthToken());
-            }
-
-            if (!Objects.equals(body, null)) {
-                http.setDoOutput(true);
-                http.addRequestProperty("Content-Type", "application/json");
-                try (var outputStream = http.getOutputStream()) {
-                    outputStream.write(body.getBytes());
-                }
-            }
-
-            http.connect();
+            HttpURLConnection http = makeConnection(method, endpoint, body);
 
             try {
                 if (http.getResponseCode() == 401) {
@@ -140,6 +124,27 @@ public class HttpCommunicator {
         return respMap;
     }
 
+    private HttpURLConnection makeConnection(String method, String endpoint, String body) throws URISyntaxException, IOException {
+        URI uri = new URI(baseURL + endpoint);
+        HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
+        http.setRequestMethod(method);
+
+        if (facade.getAuthToken() != null) {
+            http.addRequestProperty("authorization", facade.getAuthToken());
+        }
+
+        if (!Objects.equals(body, null)) {
+            http.setDoOutput(true);
+            http.addRequestProperty("Content-Type", "application/json");
+            try (var outputStream = http.getOutputStream()) {
+                outputStream.write(body.getBytes());
+            }
+        }
+
+        http.connect();
+        return http;
+    }
+
     private String requestString(String method, String endpoint) {
         return requestString(method, endpoint, null);
     }
@@ -147,23 +152,7 @@ public class HttpCommunicator {
     private String requestString(String method, String endpoint, String body) {
         String resp;
         try {
-            URI uri = new URI(baseURL + endpoint);
-            HttpURLConnection http = (HttpURLConnection) uri.toURL().openConnection();
-            http.setRequestMethod(method);
-
-            if (facade.getAuthToken() != null) {
-                http.addRequestProperty("authorization", facade.getAuthToken());
-            }
-
-            if (!Objects.equals(body, null)) {
-                http.setDoOutput(true);
-                http.addRequestProperty("Content-Type", "application/json");
-                try (var outputStream = http.getOutputStream()) {
-                    outputStream.write(body.getBytes());
-                }
-            }
-
-            http.connect();
+            HttpURLConnection http = makeConnection(method, endpoint, body);
 
             try {
                 if (http.getResponseCode() == 401) {
