@@ -1,5 +1,6 @@
 package ui;
 
+import chess.ChessGame;
 import client.ServerFacade;
 import model.GameData;
 
@@ -10,157 +11,175 @@ import static ui.EscapeSequences.*;
 
 public class PostloginREPL {
 
-    private final ServerFacade serverFacade;
-    private List<GameData> availableGames;
+    ServerFacade server;
+    List<GameData> games;
 
-    public PostloginREPL(ServerFacade serverFacade) {
-        this.serverFacade = serverFacade;
-        this.availableGames = new ArrayList<>();
+    boolean inGame;
+
+    public PostloginREPL(ServerFacade server) {
+        this.server = server;
+        games = new ArrayList<>();
     }
 
     public void run() {
-        boolean sessionActive = true;
+        boolean loggedIn = true;
+        inGame = false;
         out.print(RESET_TEXT_COLOR + RESET_BG_COLOR);
-
-        while (sessionActive) {
-            String[] userCommand = promptUserInput();
-
-            switch (userCommand[0]) {
+        while (loggedIn && !inGame) {
+            String[] input = getUserInput();
+            switch (input[0]) {
                 case "quit":
                     return;
-
                 case "help":
-                    displayHelp();
+                    printHelpMenu();
                     break;
-
                 case "logout":
-                    serverFacade.logout();
-                    sessionActive = false;
+                    server.logout();
+                    loggedIn = false;
                     break;
-
                 case "list":
-                    updateGameList();
-                    showGames();
+                    refreshGames();
+                    printGames();
                     break;
-
                 case "create":
-                    if (userCommand.length != 2) {
-                        out.println("Missing game name.");
-                        printCreateUsage();
+                    if (input.length != 2) {
+                        out.println("Please provide a name");
+                        printCreate();
                         break;
                     }
-                    int newGameId = serverFacade.createGame(userCommand[1]);
-                    out.printf("Game created with ID: %d%n", newGameId);
+                    server.createGame(input[1]);
+                    out.printf("Created game: %s%n", input[1]);
                     break;
-
                 case "join":
-                    if (userCommand.length != 3) {
-                        out.println("Provide a game index and a color.");
-                        printJoinUsage();
-                        break;
-                    }
-                    updateGameList();
-                    GameData gameToJoin = getGameByIndex(userCommand[1]);
-                    if (gameToJoin == null) {
-                        out.println("Game not found.");
-                        break;
-                    }
-
-                    boolean joinSuccess = serverFacade.joinGame(gameToJoin.gameID(), userCommand[2].toUpperCase());
-                    if (joinSuccess) {
-                        out.println("Successfully joined game.");
-                        new BoardPrinter(gameToJoin.game().getBoard()).printBoard();
-                    } else {
-                        out.println("Join failed: invalid game or color unavailable.");
-                        printJoinUsage();
-                    }
+                    handleJoin(input);
                     break;
-
                 case "observe":
-                    if (userCommand.length != 2) {
-                        out.println("Provide a game index to observe.");
-                        printObserveUsage();
-                        break;
-                    }
-                    updateGameList();
-                    GameData gameToObserve = getGameByIndex(userCommand[1]);
-                    if (gameToObserve == null) {
-                        out.println("Game not found.");
-                        break;
-                    }
-
-                    if (serverFacade.joinGame(gameToObserve.gameID(), null)) {
-                    out.println("Now observing the game.");
-                    GameData freshGame = serverFacade.getGame(gameToObserve.gameID());
-                    new BoardPrinter(freshGame.game().getBoard()).printBoard();
-                } else {
-                    out.println("Unable to observe: game is full or does not exist.");
-                    printObserveUsage();
-                }
+                    handleObserve(input);
                     break;
-
-
                 default:
-                    out.println("Unknown command. Type 'help' for a list of valid commands.");
+                    out.println("Command not recognized, please try again");
+                    printHelpMenu();
+                    break;
             }
         }
 
-        new PreloginREPL(serverFacade).run();
+        if (!loggedIn) {
+            PreloginREPL preloginREPL = new PreloginREPL(server);
+            preloginREPL.run();
+        }
     }
 
-    private String[] promptUserInput() {
+    private String[] getUserInput() {
         out.print("\n[LOGGED IN] >>> ");
-        return new Scanner(System.in).nextLine().trim().split("\\s+");
+        Scanner scanner = new Scanner(System.in);
+        return scanner.nextLine().split(" ");
     }
 
-    private void updateGameList() {
-        availableGames = new ArrayList<>(serverFacade.listGames());
+    private void refreshGames() {
+        games = new ArrayList<>();
+        HashSet<GameData> gameList = server.listGames();
+        games.addAll(gameList);
     }
 
-    private void showGames() {
-        for (int i = 0; i < availableGames.size(); i++) {
-            GameData game = availableGames.get(i);
-            String whitePlayer = Optional.ofNullable(game.whiteUsername()).orElse("open");
-            String blackPlayer = Optional.ofNullable(game.blackUsername()).orElse("open");
-
-            out.printf("%d -- Game ID: %d | Name: %s | White: %s | Black: %s%n",
-                    i, game.gameID(), game.gameName(), whitePlayer, blackPlayer);
+    private void printGames() {
+        for (int i = 0; i < games.size(); i++) {
+            GameData game = games.get(i);
+            String whiteUser = game.whiteUsername() != null ? game.whiteUsername() : "open";
+            String blackUser = game.blackUsername() != null ? game.blackUsername() : "open";
+            out.printf("%d -- Game Name: %s  |  White User: %s  |  Black User: %s %n", i, game.gameName(), whiteUser, blackUser);
         }
     }
 
-    private GameData getGameByIndex(String indexStr) {
-        try {
-            int index = Integer.parseInt(indexStr);
-            if (index < 0 || index >= availableGames.size()) {
-                out.println("Invalid game index.");
-                return null;
+    private void printHelpMenu() {
+        printCreate();
+        out.println("list - list all games");
+        printJoin();
+        printObserve();
+        out.println("logout - log out of current user");
+        out.println("quit - stop playing");
+        out.println("help - show this menu");
+    }
+
+    private void handleJoin(String[] input) {
+        if (input.length != 3 || !input[1].matches("\\d") || !input[2].toUpperCase().matches("WHITE|BLACK")) {
+            out.println("Please provide a game ID and color choice");
+            printJoin();
+            return;
+        }
+        int gameNum = Integer.parseInt(input[1]);
+        if (games.isEmpty() || games.size() <= gameNum) {
+            refreshGames();
+            if (games.isEmpty()) {
+                out.println("Error: please first create a game");
+                return;
             }
-            return availableGames.get(index);
-        } catch (NumberFormatException e) {
-            out.println("Invalid index format. Must be a number.");
-            return null;
+            if (games.size() <= gameNum) {
+                out.println("Error: that Game ID does not exist");
+                printGames();
+                return;
+            }
+        }
+        GameData joinGame = games.get(gameNum);
+        ChessGame.TeamColor color = input[2].equalsIgnoreCase("WHITE") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
+        if (server.joinGame(joinGame.gameID(), input[2].toUpperCase())) {
+            out.println("You have joined the game");
+            inGame = true;
+            server.connectWS();
+            server.joinPlayer(joinGame.gameID(), color);
+            GameplayREPL gameplayREPL = new GameplayREPL(server, joinGame, color);
+            gameplayREPL.run();
+        } else {
+            out.println("Game does not exist or color taken");
+            printJoin();
         }
     }
 
-    private void displayHelp() {
-        printCreateUsage();
-        out.println("list - games");
-        printJoinUsage();
-        printObserveUsage();
-        out.println("logout - when you are done");
-        out.println("quit - playing chess");
-        out.println("help - with possible commands");
+    private void handleObserve(String[] input) {
+        if (input.length != 2 || !input[1].matches("\\d")) {
+            out.println("Please provide a game ID");
+            printObserve();
+            return;
+        }
+        int gameObservedNum = Integer.parseInt(input[1]);
+        if (games.isEmpty() || games.size() <= gameObservedNum) {
+            refreshGames();
+            if (games.isEmpty()) {
+                out.println("Error: please first create a game");
+                return;
+            }
+            if (games.size() <= gameObservedNum) {
+                out.println("Error: that Game ID does not exist");
+                printGames();
+                return;
+            }
+        }
+        GameData observeGame = games.get(gameObservedNum);
+        if (server.joinGame(observeGame.gameID(), null)) {
+            out.println("You have joined the game as an observer");
+            inGame = true;
+            server.connectWS();
+            server.joinObserver(observeGame.gameID());
+            GameplayREPL gameplayREPL = new GameplayREPL(server, observeGame, null);
+            gameplayREPL.run();
+            return;
+        } else {
+            out.println("Game does not exist");
+            printObserve();
+            return;
+        }
     }
 
-    private void printCreateUsage() {
-        out.println("create <NAME> - a game");
+    private void printCreate() {
+        out.println("create <NAME> - create a new game");
     }
 
-    private void printJoinUsage() {
-        out.println("join <INDEX> [WHITE|BLACK] - a game");
+    private void printJoin() {
+        out.println("join <ID> [WHITE|BLACK] - join a game as color");
     }
 
-    private void printObserveUsage() {
-        out.println("observe <INDEX> - a game");
+    private void printObserve() {
+        out.println("observe <ID> - observe a game");
     }
+
+
 }
