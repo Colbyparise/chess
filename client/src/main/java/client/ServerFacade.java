@@ -70,11 +70,11 @@ public class ServerFacade {
     }
 
     public void joinPlayer(int gameID, ChessGame.TeamColor color) {
-        sendCommand(new JoinPlayer(authToken, gameID, color));
+        sendCommand(new Connect(authToken, gameID, color));
     }
 
     public void joinObserver(int gameID) {
-        sendCommand(new JoinObserver(authToken, gameID));
+        sendCommand(new Connect(authToken, gameID));
     }
 
     public void makeMove(int gameID, ChessMove move) {

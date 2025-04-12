@@ -39,12 +39,12 @@ public class WebsocketHandler {
         System.out.printf("Received: %s\n", message);
 
         if (message.contains("\"commandType\":\"JOIN_PLAYER\"")) {
-            JoinPlayer command = new Gson().fromJson(message, JoinPlayer.class);
+            Connect command = new Gson().fromJson(message, Connect.class);
             Server.gameSessions.replace(session, command.getGameID());
             handleJoinPlayer(session, command);
         }
         else if (message.contains("\"commandType\":\"JOIN_OBSERVER\"")) {
-            JoinObserver command = new Gson().fromJson(message, JoinObserver.class);
+            Connect command = new Gson().fromJson(message, Connect.class);
             Server.gameSessions.replace(session, command.getGameID());
             handleJoinObserver(session, command);
         }
@@ -62,11 +62,11 @@ public class WebsocketHandler {
         }
     }
 
-    private void handleJoinPlayer(Session session, JoinPlayer command) throws IOException {
+    private void handleJoinPlayer(Session session, Connect command) throws IOException {
 
         try {
-            AuthData auth = Server.userService.getAuth(command.getAuthString());
-            GameData game = Server.gameService.getGameData(command.getAuthString(), command.getGameID());
+            AuthData auth = Server.userService.getAuth(command.getAuthToken());
+            GameData game = Server.gameService.getGameData(command.getAuthToken(), command.getGameID());
 
             ChessGame.TeamColor joiningColor = command.getColor().toString().equalsIgnoreCase("white") ? ChessGame.TeamColor.WHITE : ChessGame.TeamColor.BLACK;
 
@@ -98,10 +98,10 @@ public class WebsocketHandler {
 
     }
 
-    private void handleJoinObserver(Session session, JoinObserver command) throws IOException {
+    private void handleJoinObserver(Session session, Connect command) throws IOException {
         try {
-            AuthData auth = Server.userService.getAuth(command.getAuthString());
-            GameData game = Server.gameService.getGameData(command.getAuthString(), command.getGameID());
+            AuthData auth = Server.userService.getAuth(command.getAuthToken());
+            GameData game = Server.gameService.getGameData(command.getAuthToken(), command.getGameID());
 
             Notification notif = new Notification("%s has joined the game as an observer".formatted(auth.username()));
             broadcastMessage(session, notif);
