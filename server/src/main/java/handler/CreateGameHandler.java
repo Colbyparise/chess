@@ -6,15 +6,15 @@ import dataaccess.DataAccessException;
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.GameDAO;
 import network.http.GameRequest;
-import service.CreateGameService;
+import service.CreateGame;
 import spark.Request;
 import spark.Response;
 
 public class CreateGameHandler {
-    private CreateGameService service;
+    private CreateGame service;
 
     public CreateGameHandler(AuthDAO authDAO, GameDAO gameDAO) {
-        service = new CreateGameService(authDAO, gameDAO);
+        service = new CreateGame(authDAO, gameDAO);
     }
 
     public String createGame(Request req, Response res, Gson gson) throws DataAccessException {

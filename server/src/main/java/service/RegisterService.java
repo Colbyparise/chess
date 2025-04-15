@@ -12,32 +12,38 @@ import network.http.RegisterResult;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class RegisterService {
-    UserDAO userDAO;
-    AuthDAO authDAO;
+
+    private final UserDAO userDAO;
+    private final AuthDAO authDAO;
 
     public RegisterService(UserDAO userDAO, AuthDAO authDAO) {
         this.userDAO = userDAO;
         this.authDAO = authDAO;
     }
 
-    public RegisterResult register(Register request) throws DataAccessException {
-        var userData = request.userData();
-        if (userData == null || userData.email() == null || userData.password() == null || userData.username() == null) {
+    public RegisterResult register(Register req) throws DataAccessException {
+        var newUser = req.userData();
+
+        if (isInvalid(newUser)) {
             throw new BadRequestException("Error: bad request");
         }
 
-        if (userDAO.getUser(userData.username()) != null) {
+        if (userDAO.getUser(newUser.username()) != null) {
             throw new TakenException("Error: already taken");
         }
-        else {
-            String hash = BCrypt.hashpw(userData.password(), BCrypt.gensalt());
-            var hashedUser = new UserData(userData.username(), hash, userData.email());
-            userDAO.createUser(hashedUser);
 
-            var token = AuthDAO.generateAuth(userData.username());
-            authDAO.createAuth(token);
-            return new RegisterResult(userData.username(), token.authToken());
-        }
+        var hashedPassword = BCrypt.hashpw(newUser.password(), BCrypt.gensalt());
+        var securedUser = new UserData(newUser.username(), hashedPassword, newUser.email());
 
+        userDAO.createUser(securedUser);
+
+        var authToken = AuthDAO.generateAuth(securedUser.username());
+        authDAO.createAuth(authToken);
+
+        return new RegisterResult(securedUser.username(), authToken.authToken());
+    }
+
+    private boolean isInvalid(UserData user) {
+        return user == null || user.username() == null || user.password() == null || user.email() == null;
     }
 }

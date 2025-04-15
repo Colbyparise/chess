@@ -1,99 +1,78 @@
 package server;
 
+import com.google.gson.Gson;
 import dataaccess.*;
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.GameDAO;
 import dataaccess.interfaces.UserDAO;
 import handler.*;
-import com.google.gson.Gson;
 import network.MessageError;
 import server.websocket.WebSocketHandler;
 import spark.*;
 
 import java.sql.Connection;
 
-
 public class Server {
 
-    private static interface RequestPredicate {
+    // Functional interface for handling Spark requests with data access
+    @FunctionalInterface
+    private interface RequestHandler {
         String handle(Request req, Response res) throws DataAccessException;
     }
 
-    private final WebSocketHandler webSocketHandler;
+    private final WebSocketHandler socketHandler;
 
-    private ClearHandler clearHandler;
-    private RegisterHandler registerHandler;
-    private LoginHandler loginHandler;
-    private LogoutHandler logoutHandler;
+    // HTTP request handlers
+    private final ClearHandler clearHandler;
+    private final RegisterHandler registerHandler;
+    private final LoginHandler loginHandler;
+    private final LogoutHandler logoutHandler;
+    private final ListGamesHandler listGamesHandler;
+    private final JoinGameHandler joinGameHandler;
+    private final CreateGameHandler createGameHandler;
 
-    private ListGamesHandler listGamesHandler;
-    private JoinGameHandler joinGameHandler;
-    private CreateGameHandler createGameHandler;
+    // DAOs
+    private final AuthDAO authDAO;
+    private final UserDAO userDAO;
+    private final GameDAO gameDAO;
 
-    private AuthDAO authDAO;
-    private UserDAO userDAO;
-    private GameDAO gameDAO;
-    Connection connection;
+    private final Gson gson = new Gson();
 
-    private Gson gson;
+    private final Connection connection;
 
     public Server() {
-
         try {
             DatabaseManager.createDatabase();
-            connection = DatabaseManager.getConnection();
+            this.connection = DatabaseManager.getConnection();
 
-            authDAO = new SQLAuthDAO(connection);
-            userDAO = new SQLUserDAO(connection);
-            gameDAO = new SQLGameDAO(connection);
-
+            this.authDAO = new SQLAuthDAO(connection);
+            this.userDAO = new SQLUserDAO(connection);
+            this.gameDAO = new SQLGameDAO(connection);
         } catch (DataAccessException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to initialize database connection", e);
         }
 
-        webSocketHandler = new WebSocketHandler(authDAO, gameDAO);
+        this.socketHandler = new WebSocketHandler(authDAO, gameDAO);
 
-
-        clearHandler = new ClearHandler(authDAO, userDAO, gameDAO);
-        registerHandler = new RegisterHandler(userDAO, authDAO);
-        loginHandler = new LoginHandler(userDAO, authDAO);
-        logoutHandler = new LogoutHandler(authDAO);
-
-        listGamesHandler = new ListGamesHandler(authDAO, gameDAO);
-        joinGameHandler = new JoinGameHandler(authDAO, gameDAO);
-        createGameHandler = new CreateGameHandler(authDAO, gameDAO);
-
-        gson = new Gson();
+        // Initialize handlers
+        this.clearHandler = new ClearHandler(authDAO, userDAO, gameDAO);
+        this.registerHandler = new RegisterHandler(userDAO, authDAO);
+        this.loginHandler = new LoginHandler(userDAO, authDAO);
+        this.logoutHandler = new LogoutHandler(authDAO);
+        this.listGamesHandler = new ListGamesHandler(authDAO, gameDAO);
+        this.joinGameHandler = new JoinGameHandler(authDAO, gameDAO);
+        this.createGameHandler = new CreateGameHandler(authDAO, gameDAO);
     }
 
-    public int run(int desiredPort) {
-
-        Spark.port(desiredPort);
-
+    public int run(int port) {
+        Spark.port(port);
         Spark.staticFiles.location("web");
+        Spark.webSocket("/ws", socketHandler);
 
-        Spark.webSocket("/ws", webSocketHandler);
-
-        // Register your endpoints and handle exceptions here.
-        registerEndpoints();
-
-        //This line initializes the server and can be removed once you have a functioning endpoint
-        //Spark.init();
+        registerRoutes();
 
         Spark.awaitInitialization();
         return Spark.port();
-    }
-
-    private void registerEndpoints() {
-        Spark.post("/user", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> registerHandler.register(reqIn, resIn, gson)));
-        Spark.post("/session", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> loginHandler.login(reqIn, resIn, gson)));
-        Spark.delete("/session", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> logoutHandler.logout(reqIn, resIn)));
-
-        Spark.get("/game", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> listGamesHandler.listGames(reqIn, resIn, gson)));
-        Spark.post("/game", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> createGameHandler.createGame(reqIn, resIn, gson)));
-        Spark.put("/game", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> joinGameHandler.joinGame(reqIn, resIn, gson)));
-
-        Spark.delete("/db", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> clearHandler.clear(reqIn, resIn)));
     }
 
     public void stop() {
@@ -101,25 +80,33 @@ public class Server {
         Spark.awaitStop();
     }
 
-    private Object handleRequest(Request req, Response res, RequestPredicate predicate) {
+    private void registerRoutes() {
+        Spark.post("/user", (req, res) -> handle(req, res, (r, s) -> registerHandler.register(r, s, gson)));
+        Spark.post("/session", (req, res) -> handle(req, res, (r, s) -> loginHandler.login(r, s, gson)));
+        Spark.delete("/session", (req, res) -> handle(req, res, logoutHandler::logout));
+
+        Spark.get("/game", (req, res) -> handle(req, res, (r, s) -> listGamesHandler.listGames(r, s, gson)));
+        Spark.post("/game", (req, res) -> handle(req, res, (r, s) -> createGameHandler.createGame(r, s, gson)));
+        Spark.put("/game", (req, res) -> handle(req, res, (r, s) -> joinGameHandler.joinGame(r, s, gson)));
+
+        Spark.delete("/db", (req, res) -> handle(req, res, clearHandler::clear));
+    }
+
+    private Object handle(Request req, Response res, RequestHandler handler) {
         try {
-            return predicate.handle(req, res);
-        } catch (BadRequestException ex) {
+            return handler.handle(req, res);
+        } catch (BadRequestException e) {
             res.status(400);
-            var error = new MessageError(ex.getMessage());
-            return gson.toJson(error);
-        } catch (UnauthorizedException ex) {
+            return gson.toJson(new MessageError(e.getMessage()));
+        } catch (UnauthorizedException e) {
             res.status(401);
-            var error = new MessageError(ex.getMessage());
-            return gson.toJson(error);
-        } catch (TakenException ex) {
+            return gson.toJson(new MessageError(e.getMessage()));
+        } catch (TakenException e) {
             res.status(403);
-            var error = new MessageError(ex.getMessage());
-            return gson.toJson(error);
-        } catch (DataAccessException ex) {
+            return gson.toJson(new MessageError(e.getMessage()));
+        } catch (DataAccessException e) {
             res.status(500);
-            var error = new MessageError(ex.getMessage());
-            return gson.toJson(error);
+            return gson.toJson(new MessageError(e.getMessage()));
         }
     }
 }

@@ -4,15 +4,15 @@ import dataaccess.BadRequestException;
 import dataaccess.DataAccessException;
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.GameDAO;
-
 import network.http.GameRequest;
 import network.http.GameResult;
 
-public class CreateGameService {
-    AuthDAO authDAO;
-    GameDAO gameDAO;
+public class CreateGame {
 
-    public CreateGameService(AuthDAO authDAO, GameDAO gameDAO) {
+    private final AuthDAO authDAO;
+    private final GameDAO gameDAO;
+
+    public CreateGame (AuthDAO authDAO, GameDAO gameDAO) {
         this.authDAO = authDAO;
         this.gameDAO = gameDAO;
     }
@@ -22,8 +22,9 @@ public class CreateGameService {
             throw new BadRequestException("Error: bad request");
         }
 
-        var auth = authDAO.authenticate(request.authToken());
-        int id = gameDAO.createGame(auth, request.gameName());
-        return new GameResult(id);
+        var userSession = authDAO.authenticate(request.authToken());
+        int newGameId = gameDAO.createGame(userSession, request.gameName());
+
+        return new GameResult(newGameId);
     }
 }

@@ -9,17 +9,16 @@ import dataaccess.interfaces.GameDAO;
 import model.GameData;
 import network.http.JoinGame;
 
-import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
+import java.util.HashSet;
 
 public class JoinGameService {
-    final HashSet<String> validTeams = new HashSet<>(List.of(
-            "WHITE",
-            "BLACK"
-    ));
 
-    private AuthDAO authDAO;
-    private GameDAO gameDAO;
+    private static final Set<String> VALID_COLORS = new HashSet<>(List.of("WHITE", "BLACK"));
+
+    private final AuthDAO authDAO;
+    private final GameDAO gameDAO;
 
     public JoinGameService(AuthDAO authDAO, GameDAO gameDAO) {
         this.authDAO = authDAO;
@@ -27,36 +26,34 @@ public class JoinGameService {
     }
 
     public void joinGame(JoinGame request) throws DataAccessException {
-        var team = request.playerColor();
-        if (request.authToken() == null || team == null || request.gameID() == 0) {
+        var requestedColor = request.playerColor();
+        var gameId = request.gameID();
+        var token = request.authToken();
+
+        if (token == null || requestedColor == null || gameId == 0) {
             throw new BadRequestException("Error: bad request");
         }
 
-        team = team.toUpperCase();
-        if (!validTeams.contains(team)) {
+        requestedColor = requestedColor.toUpperCase();
+        if (!VALID_COLORS.contains(requestedColor)) {
             throw new BadRequestException("Error: bad request");
         }
 
-        var auth = authDAO.authenticate(request.authToken());
+        var session = authDAO.authenticate(token);
+        var game = gameDAO.getGame(session, gameId);
 
-        var oldGame = gameDAO.getGame(auth, request.gameID());
-        var blkUser = oldGame.blackUsername();
-        var whtUser = oldGame.whiteUsername();
-        GameData newGame;
+        String white = game.whiteUsername();
+        String black = game.blackUsername();
+        GameData updatedGame;
 
-        if ("WHITE".equals(team)) {
-            if (whtUser != null) {
-                throw new TakenException("Error: already taken");
-            }
-            newGame = new GameData(oldGame.gameID(), auth.username(), blkUser, oldGame.gameName(), oldGame.game());
-        }
-        else {
-            if (blkUser != null) {
-                throw new TakenException("Error: already taken");
-            }
-            newGame = new GameData(oldGame.gameID(), whtUser, auth.username(), oldGame.gameName(), oldGame.game());
+        if ("WHITE".equals(requestedColor)) {
+            if (white != null) throw new TakenException("Error: already taken");
+            updatedGame = new GameData(game.gameID(), session.username(), black, game.gameName(), game.game());
+        } else {
+            if (black != null) throw new TakenException("Error: already taken");
+            updatedGame = new GameData(game.gameID(), white, session.username(), game.gameName(), game.game());
         }
 
-        gameDAO.updateGame(newGame);
+        gameDAO.updateGame(updatedGame);
     }
 }

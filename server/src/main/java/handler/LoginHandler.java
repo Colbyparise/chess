@@ -2,7 +2,7 @@ package handler;
 
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.UserDAO;
-import service.LoginService;
+import service.Login;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 
@@ -11,11 +11,11 @@ import spark.Request;
 import spark.Response;
 
 public class LoginHandler {
-    LoginService service;
+    Login service;
 
     public LoginHandler(UserDAO userDAO, AuthDAO authDAO) {
 
-        service = new LoginService(userDAO, authDAO);
+        service = new Login(userDAO, authDAO);
     }
 
     public String login(Request req, Response res, Gson gson) throws DataAccessException {

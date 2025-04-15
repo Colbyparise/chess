@@ -2,7 +2,7 @@ package handler;
 
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.GameDAO;
-import service.ListGamesService;
+import service.ListGames;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 
@@ -11,10 +11,10 @@ import spark.Request;
 import spark.Response;
 
 public class ListGamesHandler {
-    ListGamesService service;
+    ListGames service;
 
     public ListGamesHandler(AuthDAO authDAO, GameDAO gameDAO) {
-        this.service = new ListGamesService(authDAO, gameDAO);
+        this.service = new ListGames(authDAO, gameDAO);
     }
 
     public String listGames(Request req, Response res, Gson gson) throws DataAccessException {

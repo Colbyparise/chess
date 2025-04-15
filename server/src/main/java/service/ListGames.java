@@ -7,11 +7,11 @@ import dataaccess.interfaces.GameDAO;
 import network.http.GetGames;
 import network.http.ListOfGames;
 
-public class ListGamesService {
+public class ListGames {
     AuthDAO authDAO;
     GameDAO gameDAO;
 
-    public ListGamesService(AuthDAO authDAO, GameDAO gameDAO) {
+    public ListGames(AuthDAO authDAO, GameDAO gameDAO) {
         this.authDAO = authDAO;
         this.gameDAO = gameDAO;
     }
