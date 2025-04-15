@@ -69,9 +69,11 @@ import calculators.*;
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof ChessPiece other)) return false;
-        return team == other.team &&
+        if (this == obj) {
+            return true;
+        }if (!(obj instanceof ChessPiece other)) {
+            return false;
+        }return team == other.team &&
                 kind == other.kind &&
                 Objects.equals(currentPosition, other.currentPosition);
     }

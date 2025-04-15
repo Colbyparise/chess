@@ -28,8 +28,12 @@ import java.util.Objects;
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) return true;
-            if (!(other instanceof ChessMove move)) return false;
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof ChessMove move)) {
+                return false;
+            }
             return Objects.equals(origin, move.origin) &&
                     Objects.equals(destination, move.destination) &&
                     promotedPiece == move.promotedPiece;

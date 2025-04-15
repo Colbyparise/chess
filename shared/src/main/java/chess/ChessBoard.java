@@ -112,8 +112,12 @@ public class ChessBoard {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChessBoard board)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ChessBoard board)) {
+            return false;
+        }
         return Arrays.deepEquals(this.pieces, board.pieces);
     }
 

@@ -46,9 +46,12 @@ public class ClientMessage {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof ClientMessage)) return false;
-
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof ClientMessage)) {
+            return false;
+        }
         ClientMessage other = (ClientMessage) obj;
         return gameID == other.gameID &&
                 commandType == other.commandType &&

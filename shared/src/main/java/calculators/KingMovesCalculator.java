@@ -16,8 +16,9 @@ public class KingMovesCalculator implements PieceMovesCalculator {
 
         for (int rowOffset = -1; rowOffset <= 1; rowOffset++) {
             for (int colOffset = -1; colOffset <= 1; colOffset++) {
-                if (rowOffset == 0 && colOffset == 0) continue; // Skip original position
-
+                if (rowOffset == 0 && colOffset == 0) {
+                    continue;
+                }
                 int targetRow = row + rowOffset;
                 int targetCol = col + colOffset;
                 ChessPosition destination = new ChessPosition(targetRow, targetCol);

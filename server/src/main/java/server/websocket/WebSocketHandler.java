@@ -65,9 +65,15 @@ public class WebSocketHandler {
         String message = username + " connected";
         try {
             var game = games.getGame(new AuthData(token, username), gameId);
-            if (username.equals(game.whiteUsername())) message += " as the white player";
-            else if (username.equals(game.blackUsername())) message += " as the black player";
-            else message += " as an observer";
+            if (username.equals(game.whiteUsername())) {
+                message += " as the white player";
+            }
+            else if (username.equals(game.blackUsername())) {
+                message += " as the black player";
+            }
+            else {
+                message += " as an observer";
+            }
         } catch (DataAccessException e) {
             throw new IOException(e);
         }

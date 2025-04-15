@@ -15,8 +15,9 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         int row = myPosition.getRow();
         var pawn = board.getPiece(myPosition);
 
-        if (pawn == null) return possibleMoves;
-
+        if (pawn == null) {
+            return possibleMoves;
+        }
         int direction = pawn.getTeamColor() == ChessGame.TeamColor.BLACK ? -1 : 1;
 
         ChessPosition oneStepForward = new ChessPosition(row + direction, col);
@@ -40,11 +41,13 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         int col = end.getColumn();
         int row = end.getRow();
 
-        if (row < 1 || row > 8 || col < 1 || col > 8) return false;
-
+        if (row < 1 || row > 8 || col < 1 || col > 8) {
+            return false;
+        }
         var pawn = board.getPiece(start);
-        if (pawn == null) return false;
-
+        if (pawn == null) {
+            return false;
+        }
         var destinationPiece = board.getPiece(end);
         boolean targetOccupied = destinationPiece != null;
         boolean enemyPiece = targetOccupied && destinationPiece.getTeamColor() != pawn.getTeamColor();
