@@ -1,28 +1,25 @@
 package chess;
-import chess.piecemovement.*;
-import java.util.Objects;
+
 import java.util.Collection;
+import java.util.Objects;
 
-/**
- * Represents a single chess piece
- * <p>
- * Note: You can add to this class, but you may not alter
- * signature of the existing methods.
- */
-public class ChessPiece {
+import calculators.*;
 
-    private final ChessGame.TeamColor teamColor;
-    private final PieceType pieceType;
+ public class ChessPiece {
 
-    public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
-        this.teamColor = pieceColor;
-        this.pieceType = type;
+    private final ChessGame.TeamColor team;
+    private final PieceType kind;
+    private ChessPosition currentPosition;
+    private boolean movedBefore;
 
+    public ChessPiece(ChessGame.TeamColor color, PieceType pieceKind) {
+        this.team = color;
+        this.kind = pieceKind;
+        this.currentPosition = null;
+        this.movedBefore = false;
     }
 
-    /**
-     * The various different chess piece options
-     */
+
     public enum PieceType {
         KING,
         QUEEN,
@@ -32,66 +29,66 @@ public class ChessPiece {
         PAWN
     }
 
-    /**
-     * @return Which team this chess piece belongs to
-     */
     public ChessGame.TeamColor getTeamColor() {
-
-        return teamColor;
+        return team;
     }
 
-    /**
-     * @return which type of chess piece this piece is
-     */
     public PieceType getPieceType() {
-
-        return pieceType;
+        return kind;
     }
 
-    /**
-     * Calculates all the positions a chess piece can move to
-     * Does not take into account moves that are illegal due to leaving the king in
-     * danger
-     *
-     * @return Collection of valid moves
-     */
-    public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        return switch (pieceType) {
-            case KING -> KingMoveCalculation.getMoves(board, myPosition);
-            case QUEEN -> QueenMovesCalculator.getMoves(board, myPosition);
-            case BISHOP -> BishopMovesCalculator.getMoves(board, myPosition);
-            case ROOK -> RookMovesCalculator.getMoves(board, myPosition);
-            case PAWN -> PawnMovesCalculator.getMoves(board, myPosition);
-            case KNIGHT -> KnightMovesCalculator.getMoves(board, myPosition);
-        };
+    public ChessPosition getPos() {
+        return currentPosition;
     }
+
+    public void setPos(ChessPosition pos) {
+        this.currentPosition = pos;
+    }
+
+    public boolean getHasMoved() {
+        return movedBefore;
+    }
+
+
+    public void setHasMoved(boolean moved) {
+        this.movedBefore = moved;
+    }
+
+
     @Override
     public String toString() {
-        return switch (pieceType) {
-            case KING -> teamColor == ChessGame.TeamColor.WHITE ? "K" : "k";
-            case QUEEN -> teamColor == ChessGame.TeamColor.WHITE ? "Q" : "q";
-            case BISHOP -> teamColor == ChessGame.TeamColor.WHITE ? "B" : "b";
-            case KNIGHT -> teamColor == ChessGame.TeamColor.WHITE ? "N" : "n";
-            case ROOK -> teamColor == ChessGame.TeamColor.WHITE ? "R" : "r";
-            case PAWN -> teamColor == ChessGame.TeamColor.WHITE ? "P" : "p";
-        };
+        StringBuilder sb = new StringBuilder();
+        sb.append(team).append(" ").append(kind);
+        if (currentPosition != null) {
+            sb.append(" @ ").append(currentPosition);
+        } else {
+            sb.append(" (unplaced)");
+        }
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        ChessPiece that = (ChessPiece) obj;
-        return teamColor == that.teamColor && pieceType == that.pieceType;
+        if (this == obj) return true;
+        if (!(obj instanceof ChessPiece other)) return false;
+        return team == other.team &&
+                kind == other.kind &&
+                Objects.equals(currentPosition, other.currentPosition);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(teamColor, pieceType);
+        return Objects.hash(team, kind, currentPosition);
+    }
+
+    public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
+        return switch (kind) {
+            case BISHOP -> new BishopMovesCalculator().pieceMoves(board, myPosition);
+            case ROOK -> new RookMovesCalculator().pieceMoves(board, myPosition);
+            case QUEEN -> new QueenMovesCalculator().pieceMoves(board, myPosition);
+            case KNIGHT -> new KnightMovesCalculator().pieceMoves(board, myPosition);
+            case PAWN -> new PawnMovesCalculator().pieceMoves(board, myPosition);
+            case KING -> new KingMovesCalculator().pieceMoves(board, myPosition);
+        };
     }
 }
-

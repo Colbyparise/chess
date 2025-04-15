@@ -1,5 +1,7 @@
 package chess;
+
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A chessboard that can hold and rearrange chess pieces.
@@ -9,47 +11,54 @@ import java.util.Arrays;
  */
 public class ChessBoard {
 
-    private ChessPiece[][] squares;
+    private final ChessPiece[][] pieces = new ChessPiece[8][8];
 
     public ChessBoard() {
-        squares = new ChessPiece[8][8];
+        clearBoard();
     }
 
-    /**
-     * Adds a chess piece to the chessboard
-     *
-     * @param position where to add the piece to
-     * @param piece    the piece to add
-     */
     public void addPiece(ChessPosition position, ChessPiece piece) {
-        squares[position.getColumn()-1][position.getRow()-1] = piece;
+        pieces[position.getRow() - 1][position.getColumn() - 1] = piece;
+        piece.setPos(position);
     }
 
-    /**
-     * Gets a chess piece on the chessboard
-     *
-     * @param position The position to get the piece from
-     * @return Either the piece at the position, or null if no piece is at that
-     * position
-     */
-    public ChessPiece getPiece(ChessPosition position) {
-        return squares[position.getColumn()-1][position.getRow()-1];
+    public void removePiece(ChessPosition position) {
+        pieces[position.getRow() - 1][position.getColumn() - 1] = null;
     }
 
-    public ChessGame.TeamColor getSquareTeam(ChessPosition position) {
-        ChessPiece piece = getPiece(position);
-        return (piece != null) ? piece.getTeamColor() : null;
+    public ChessPiece movePiece(ChessMove move) {
+        ChessPosition start = move.getStartPosition();
+        ChessPiece movedPiece = getPiece(start);
+
+        if (movedPiece != null) {
+            ChessPiece.PieceType promotionType = move.getPromotionPiece();
+            ChessPiece.PieceType typeToUse = promotionType != null ? promotionType : movedPiece.getPieceType();
+
+            ChessPiece newPiece = new ChessPiece(movedPiece.getTeamColor(), typeToUse);
+            newPiece.setHasMoved(movedPiece.getHasMoved());
+            addPiece(move.getEndPosition(), newPiece);
+
+            removePiece(start);
+            return newPiece;
         }
 
+        return null;
+    }
 
-    /**
-     * Sets the board to the default starting board
-     * (How the game of chess normally starts)
-     */
+    public ChessPiece getPiece(ChessPosition position) {
+        return pieces[position.getRow() - 1][position.getColumn() - 1];
+    }
+
+    private void clearBoard() {
+        for (int row = 0; row < 8; row++) {
+            Arrays.fill(pieces[row], null);
+        }
+    }
+
     public void resetBoard() {
-        squares = new ChessPiece[8][8];
+        clearBoard();
 
-        //Add all white pieces
+        // Place white pieces
         addPiece(new ChessPosition(1, 1), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.ROOK));
         addPiece(new ChessPosition(1, 2), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(1, 3), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.BISHOP));
@@ -62,7 +71,7 @@ public class ChessBoard {
             addPiece(new ChessPosition(2, i), new ChessPiece(ChessGame.TeamColor.WHITE, ChessPiece.PieceType.PAWN));
         }
 
-        //Add all black pieces
+        // Place black pieces
         addPiece(new ChessPosition(8, 1), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.ROOK));
         addPiece(new ChessPosition(8, 2), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.KNIGHT));
         addPiece(new ChessPosition(8, 3), new ChessPiece(ChessGame.TeamColor.BLACK, ChessPiece.PieceType.BISHOP));
@@ -79,11 +88,22 @@ public class ChessBoard {
     @Override
     public String toString() {
         StringBuilder output = new StringBuilder();
-        for (int row = 7; row >= 0; row--) {
-            output.append("|");
-            for (int col = 0; col < 8; col++) {
-                output.append(squares[col][row] != null ? squares[col][row].toString() : " ");
-                output.append("|");
+        for (int row = 8; row >= 1; row--) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPiece piece = getPiece(new ChessPosition(row, col));
+                if (piece == null) {
+                    output.append("_");
+                } else {
+                    char symbol = switch (piece.getPieceType()) {
+                        case KING -> 'K';
+                        case QUEEN -> 'Q';
+                        case ROOK -> 'R';
+                        case BISHOP -> 'B';
+                        case KNIGHT -> 'N';
+                        case PAWN -> 'P';
+                    };
+                    output.append(piece.getTeamColor() == ChessGame.TeamColor.WHITE ? symbol : Character.toLowerCase(symbol));
+                }
             }
             output.append("\n");
         }
@@ -91,19 +111,14 @@ public class ChessBoard {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        ChessBoard other = (ChessBoard) obj;
-        return Arrays.deepEquals(squares, other.squares);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ChessBoard board)) return false;
+        return Arrays.deepEquals(this.pieces, board.pieces);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.deepHashCode(squares);
+        return Arrays.deepHashCode(pieces);
     }
 }

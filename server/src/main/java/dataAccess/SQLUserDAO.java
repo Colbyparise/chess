@@ -1,100 +1,55 @@
 package dataaccess;
 
+import dataaccess.interfaces.UserDAO;
 import model.UserData;
-import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class SQLUserDAO implements UserDAO {
 
-    public SQLUserDAO() {
-        initializeDatabase();
-    }
+    Connection connection;
+    private String tableVal;
 
-    private void initializeDatabase() {
-        try {
-            DatabaseManager.createDatabase();
-        } catch (DataAccessException ex) {
-            throw new RuntimeException("Failed to create database: " + ex.getMessage(), ex);
-        }
-
-        try (var conn = DatabaseManager.getConnection()) {
-            String createUserTableSQL = """
-                    CREATE TABLE IF NOT EXISTS user (
-                        username VARCHAR(255) NOT NULL,
-                        password VARCHAR(255) NOT NULL,
-                        email VARCHAR(255),
-                        PRIMARY KEY (username)
-                    )""";
-
-            try (var stmt = conn.prepareStatement(createUserTableSQL)) {
-                stmt.executeUpdate();
-            }
-        } catch (SQLException | DataAccessException e) {
-            throw new RuntimeException("Error initializing user table: " + e.getMessage(), e);
-        }
+    public SQLUserDAO(Connection connection) {
+        this.connection = connection;
+        tableVal = DatabaseManager.TABLES[DatabaseManager.TableName.Users.ordinal()];
     }
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        String selectSQL = "SELECT username, password, email FROM user WHERE username=?";
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(selectSQL)) {
-
+        UserData returnVal = null;
+        String sql = "select username, password, email from " + tableVal + " where username = ?;";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, username);
-            try (var rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    var password = rs.getString("password");
-                    var email = rs.getString("email");
-                    return new UserData(username, password, email);
-                } else {
-                    throw new DataAccessException("User not found: " + username);
-                }
+            var res = stmt.executeQuery();
+            if (res.next()) {
+                String password = res.getString(2);
+                String email = res.getString(3);
+                returnVal = new UserData(username, password, email);
             }
         } catch (SQLException e) {
-            throw new DataAccessException("Error fetching user data: " + username);
+            throw new DataAccessException(e.getMessage());
         }
+        return returnVal;
     }
 
     @Override
-    public void createUser(UserData user) throws DataAccessException {
-        String insertSQL = "INSERT INTO user (username, password, email) VALUES (?, ?, ?)";
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(insertSQL)) {
-
-            stmt.setString(1, user.username());
-            stmt.setString(2, hashPassword(user.password()));
-            stmt.setString(3, user.email());
+    public void createUser(UserData data) throws DataAccessException {
+        String sql = "INSERT INTO " + tableVal + " (username, password, email) VALUES (?, ?, ?);";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, data.username());
+            stmt.setString(2, data.password());
+            stmt.setString(3, data.email());
             stmt.executeUpdate();
-        } catch (SQLException e) {
-            throw new DataAccessException("Error creating user: " + user.username());
+        } catch (SQLException ex) {
+            throw new DataAccessException(ex.getMessage());
         }
     }
 
     @Override
-    public boolean authenticateUser(String username, String password) throws DataAccessException {
-        UserData user = getUser(username);
-        return passwordMatches(password, user.password());
-    }
-
-    @Override
-    public void clear() {
-        String truncateSQL = "TRUNCATE user";
-        try (var conn = DatabaseManager.getConnection();
-             var stmt = conn.prepareStatement(truncateSQL)) {
-
-            stmt.executeUpdate();
-        } catch (SQLException | DataAccessException e) {
-            throw new RuntimeException("Error clearing user table: " + e.getMessage());
-        }
-    }
-
-    private String hashPassword(String password) {
-        return BCrypt.hashpw(password, BCrypt.gensalt());
-    }
-
-    private boolean passwordMatches(String rawPassword, String hashedPassword) {
-        return BCrypt.checkpw(rawPassword, hashedPassword);
+    public void clear() throws DataAccessException {
+        ClearUtil.clearDB(tableVal, connection);
     }
 }

@@ -9,6 +9,8 @@ public class DatabaseManager {
     private static final String PASSWORD;
     private static final String CONNECTION_URL;
 
+    public static final String[] TABLES = {"auth", "games", "users"};
+
     /*
      * Load the database information for the db.properties file.
      */
@@ -43,6 +45,46 @@ public class DatabaseManager {
             try (var preparedStatement = conn.prepareStatement(statement)) {
                 preparedStatement.executeUpdate();
             }
+
+            statement = "USE " + DATABASE_NAME;
+
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+            statement = """
+                    CREATE TABLE IF NOT EXISTS games (
+                       id INT NOT NULL AUTO_INCREMENT,
+                       whiteUsername VARCHAR(255),
+                       blackUsername VARCHAR(255),
+                       gameName VARCHAR(255) NOT NULL,
+                       chessGame LONGTEXT NOT NULL,
+                       PRIMARY KEY (id)
+                    );""";
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+            statement = """
+                    CREATE TABLE IF NOT EXISTS auth (
+                       authToken VARCHAR(255) NOT NULl,
+                       username VARCHAR(255) NOT NULL,
+                       PRIMARY KEY (authToken)
+                    );""";
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
+
+            statement = """
+                    CREATE TABLE IF NOT EXISTS users (
+                       username VARCHAR(255) NOT NULl,
+                       password VARCHAR(255) NOT NULL,
+                       email VARCHAR(255) NOT NULL,
+                       PRIMARY KEY (username)
+                    );""";
+            try (var preparedStatement = conn.prepareStatement(statement)) {
+                preparedStatement.executeUpdate();
+            }
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
@@ -68,5 +110,23 @@ public class DatabaseManager {
         } catch (SQLException e) {
             throw new DataAccessException(e.getMessage());
         }
+    }
+
+    public static void reset() throws DataAccessException {
+        var connection = getConnection();
+        for (var table : TABLES) {
+            String sql = "truncate table " + table + ";";
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                throw new DataAccessException(e.getMessage());
+            }
+        }
+    }
+
+    public enum TableName {
+        Auth,
+        Games,
+        Users
     }
 }

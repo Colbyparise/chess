@@ -1,6 +1,10 @@
 package dataaccess;
 
-public class UnauthorizedException extends RuntimeException {
-    public UnauthorizedException() {
+/**
+ * Indicates there was an error connecting to the database
+ */
+public class UnauthorizedException extends DataAccessException{
+    public UnauthorizedException(String message) {
+        super(message);
     }
 }

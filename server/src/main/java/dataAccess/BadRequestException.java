@@ -1,6 +1,9 @@
 package dataaccess;
 
-public class BadRequestException extends RuntimeException {
+/**
+ * Indicates there was an error connecting to the database
+ */
+public class BadRequestException extends DataAccessException {
     public BadRequestException(String message) {
         super(message);
     }

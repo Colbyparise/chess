@@ -1,76 +1,99 @@
 package server;
 
 import dataaccess.*;
-import org.eclipse.jetty.websocket.api.Session;
-import service.GameService;
-import service.UserService;
+import dataaccess.interfaces.AuthDAO;
+import dataaccess.interfaces.GameDAO;
+import dataaccess.interfaces.UserDAO;
+import handler.*;
+import com.google.gson.Gson;
+import network.MessageError;
+import server.websocket.WebSocketHandler;
 import spark.*;
-import model.GameData;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import java.sql.Connection;
+
 
 public class Server {
 
-    // DAOs
-    UserDAO userDAO;
-    AuthDAO authDAO;
-    GameDAO gameDAO;
+    private static interface RequestPredicate {
+        String handle(Request req, Response res) throws DataAccessException;
+    }
 
-    // Services
-    public static UserService userService;
-    public static GameService gameService;
+    private final WebSocketHandler webSocketHandler;
 
-    // Handlers
-    UserHandler userHandler;
-    GameHandler gameHandler;
+    private ClearHandler clearHandler;
+    private RegisterHandler registerHandler;
+    private LoginHandler loginHandler;
+    private LogoutHandler logoutHandler;
 
-    // WebSocket Session Map: {Session: gameID}
-    public static ConcurrentHashMap<Session, Integer> gameSessions = new ConcurrentHashMap<>();
+    private ListGamesHandler listGamesHandler;
+    private JoinGameHandler joinGameHandler;
+    private CreateGameHandler createGameHandler;
 
-    // ✅ In-memory live game cache: {gameID: GameData}
-    public static Map<Integer, GameData> liveGames = new ConcurrentHashMap<>();
+    private AuthDAO authDAO;
+    private UserDAO userDAO;
+    private GameDAO gameDAO;
+    Connection connection;
+
+    private Gson gson;
 
     public Server() {
-        userDAO = new SQLUserDAO();
-        authDAO = new SQLAuthDAO();
-        gameDAO = new SQLGameDAO();
-
-        userService = new UserService(userDAO, authDAO);
-        gameService = new GameService(gameDAO, authDAO);
-
-        userHandler = new UserHandler(userService);
-        gameHandler = new GameHandler(gameService);
 
         try {
             DatabaseManager.createDatabase();
-        } catch (DataAccessException ex) {
-            throw new RuntimeException(ex);
+            connection = DatabaseManager.getConnection();
+
+            authDAO = new SQLAuthDAO(connection);
+            userDAO = new SQLUserDAO(connection);
+            gameDAO = new SQLGameDAO(connection);
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
         }
+
+        webSocketHandler = new WebSocketHandler(authDAO, gameDAO);
+
+
+        clearHandler = new ClearHandler(authDAO, userDAO, gameDAO);
+        registerHandler = new RegisterHandler(userDAO, authDAO);
+        loginHandler = new LoginHandler(userDAO, authDAO);
+        logoutHandler = new LogoutHandler(authDAO);
+
+        listGamesHandler = new ListGamesHandler(authDAO, gameDAO);
+        joinGameHandler = new JoinGameHandler(authDAO, gameDAO);
+        createGameHandler = new CreateGameHandler(authDAO, gameDAO);
+
+        gson = new Gson();
     }
 
     public int run(int desiredPort) {
+
         Spark.port(desiredPort);
+
         Spark.staticFiles.location("web");
 
-        // WebSocket endpoint
-        Spark.webSocket("/connect", WebsocketHandler.class);
+        Spark.webSocket("/ws", webSocketHandler);
 
-        // HTTP routes
-        Spark.delete("/db", this::clear);
-        Spark.post("/user", userHandler::handleUserRegistration);
-        Spark.post("/session", userHandler::handleUserLogin);
-        Spark.delete("/session", userHandler::handleUserLogout);
-        Spark.get("/game", gameHandler::listGames);
-        Spark.post("/game", gameHandler::createGame);
-        Spark.put("/game", gameHandler::joinGame);
+        // Register your endpoints and handle exceptions here.
+        registerEndpoints();
 
-        // Exception handling
-        Spark.exception(BadRequestException.class, this::badRequestExceptionHandler);
-        Spark.exception(UnauthorizedException.class, this::unauthorizedExceptionHandler);
-        Spark.exception(Exception.class, this::genericExceptionHandler);
+        //This line initializes the server and can be removed once you have a functioning endpoint
+        //Spark.init();
 
         Spark.awaitInitialization();
         return Spark.port();
+    }
+
+    private void registerEndpoints() {
+        Spark.post("/user", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> registerHandler.register(reqIn, resIn, gson)));
+        Spark.post("/session", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> loginHandler.login(reqIn, resIn, gson)));
+        Spark.delete("/session", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> logoutHandler.logout(reqIn, resIn)));
+
+        Spark.get("/game", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> listGamesHandler.listGames(reqIn, resIn, gson)));
+        Spark.post("/game", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> createGameHandler.createGame(reqIn, resIn, gson)));
+        Spark.put("/game", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> joinGameHandler.joinGame(reqIn, resIn, gson)));
+
+        Spark.delete("/db", (req, res) -> handleRequest(req, res, (reqIn, resIn) -> clearHandler.clear(reqIn, resIn)));
     }
 
     public void stop() {
@@ -78,30 +101,25 @@ public class Server {
         Spark.awaitStop();
     }
 
-    public void clearDB() {
-        userService.clear();
-        gameService.clear();
-        liveGames.clear(); // 🧹 clear in-memory cache too
-    }
-
-    private Object clear(Request req, Response resp) {
-        clearDB();
-        resp.status(200);
-        return "{}";
-    }
-
-    private void badRequestExceptionHandler(BadRequestException ex, Request req, Response resp) {
-        resp.status(400);
-        resp.body("{ \"message\": \"Error: bad request\" }");
-    }
-
-    private void unauthorizedExceptionHandler(UnauthorizedException ex, Request req, Response resp) {
-        resp.status(401);
-        resp.body("{ \"message\": \"Error: unauthorized\" }");
-    }
-
-    private void genericExceptionHandler(Exception ex, Request req, Response resp) {
-        resp.status(500);
-        resp.body("{ \"message\": \"Error: %s\" }".formatted(ex.getMessage()));
+    private Object handleRequest(Request req, Response res, RequestPredicate predicate) {
+        try {
+            return predicate.handle(req, res);
+        } catch (BadRequestException ex) {
+            res.status(400);
+            var error = new MessageError(ex.getMessage());
+            return gson.toJson(error);
+        } catch (UnauthorizedException ex) {
+            res.status(401);
+            var error = new MessageError(ex.getMessage());
+            return gson.toJson(error);
+        } catch (TakenException ex) {
+            res.status(403);
+            var error = new MessageError(ex.getMessage());
+            return gson.toJson(error);
+        } catch (DataAccessException ex) {
+            res.status(500);
+            var error = new MessageError(ex.getMessage());
+            return gson.toJson(error);
+        }
     }
 }

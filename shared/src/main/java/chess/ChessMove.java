@@ -1,61 +1,52 @@
 package chess;
+
 import java.util.Objects;
 
-/**
- * Represents moving a chess piece on a chessboard
- * <p>
- * Note: You can add to this class, but you may not alter
- * signature of the existing methods.
- */
-public record ChessMove(ChessPosition startPosition, ChessPosition endPosition, ChessPiece.PieceType promotionPiece) {
+    public class ChessMove {
 
-    /**
-     * @return ChessPosition of starting location
-     */
+        private final ChessPosition origin;
+        private final ChessPosition destination;
+        private final ChessPiece.PieceType promotedPiece;
 
-    public ChessPosition getStartPosition() {
-        return startPosition;
-    }
-
-    /**
-     * @return ChessPosition of ending location
-     */
-
-    public ChessPosition getEndPosition() {
-        return endPosition;
-    }
-
-    /**
-     * Gets the type of piece to promote a pawn to if pawn promotion is part of this
-     * chess move
-     *
-     * @return Type of piece to promote a pawn to, or null if no promotion
-     */
-
-    public ChessPiece.PieceType getPromotionPiece() {
-        return promotionPiece;
-    }
-
-    @Override
-    public String toString() {
-        return String.format(
-                "ChessMove{startPosition=%s, endPosition=%s, promotionPiece=%s}",
-                startPosition, endPosition, promotionPiece
-        );
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
+        public ChessMove(ChessPosition from, ChessPosition to, ChessPiece.PieceType promoteTo) {
+            this.origin = from;
+            this.destination = to;
+            this.promotedPiece = promoteTo;
         }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        ChessMove move = (ChessMove) obj;
-        return Objects.equals(startPosition, move.startPosition)
-                && Objects.equals(endPosition, move.endPosition)
-                && promotionPiece == move.promotionPiece;
-    }
 
-}
+        public ChessPosition getStartPosition() {
+            return origin;
+        }
+
+        public ChessPosition getEndPosition() {
+            return destination;
+        }
+
+        public ChessPiece.PieceType getPromotionPiece() {
+            return promotedPiece;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            if (!(other instanceof ChessMove move)) return false;
+            return Objects.equals(origin, move.origin) &&
+                    Objects.equals(destination, move.destination) &&
+                    promotedPiece == move.promotedPiece;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(origin, destination, promotedPiece);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(origin).append(" -> ").append(destination);
+            if (promotedPiece != null) {
+                sb.append(", promotes to ").append(promotedPiece);
+            }
+            return sb.toString();
+        }
+    }
