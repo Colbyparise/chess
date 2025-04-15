@@ -1,13 +1,11 @@
 package service;
 
-import chess.ChessBoard;
 import chess.ChessGame;
+import chess.ChessBoard;
 import dataaccess.*;
 import model.AuthData;
 import model.GameData;
-
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
@@ -92,40 +90,64 @@ public class GameService {
      * @throws BadRequestException bad request
      */
     public boolean joinGame(String authToken, int gameID, String color) throws UnauthorizedException, BadRequestException {
-        AuthData authData;
-        GameData gameData;
-        try {
-            authData = authDAO.getAuth(authToken);
-        } catch (DataAccessException e) {
-            throw new UnauthorizedException();
+        AuthData authData = validateAuth(authToken);
+        GameData gameData = getGameData(gameID);
+
+
+        validateColor(color);
+
+        String updatedWhiteUser = gameData.whiteUsername();
+        String updatedBlackUser = gameData.blackUsername();
+
+        if (color.equals("WHITE")) {
+            if (updatedWhiteUser != null) {
+                return false;
+            } else {
+                updatedWhiteUser = authData.username();
+            }
+        } else {
+            if (updatedBlackUser != null) {
+                return false;
+            } else {
+                updatedBlackUser = authData.username();
+            }
         }
 
         try {
-            gameData = gameDAO.getGame(gameID);
-        } catch (DataAccessException e) {
-            throw new BadRequestException(e.getMessage());
-        }
-
-        String whiteUser = gameData.whiteUsername();
-        String blackUser = gameData.blackUsername();
-
-        if (Objects.equals(color, "WHITE")) {
-            if (whiteUser != null && !whiteUser.equals(authData.username())) return false; // Spot taken by someone else
-            else whiteUser = authData.username();
-        } else if (Objects.equals(color, "BLACK")) {
-            if (blackUser != null && !blackUser.equals(authData.username())) return false; // Spot taken by someone else
-            else blackUser = authData.username();
-        } else if (color != null) throw new BadRequestException("%s is not a valid team color".formatted(color));
-
-        try {
-            gameDAO.updateGame(new GameData(gameID, whiteUser, blackUser, gameData.gameName(), gameData.game()));
+            gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
         } catch (DataAccessException e) {
             throw new BadRequestException(e.getMessage());
         }
         return true;
     }
 
+
     public void clear() {
         gameDAO.clear();
+    }
+
+    private AuthData validateAuth(String authToken) throws UnauthorizedException {
+        try {
+            return authDAO.getAuth(authToken);
+        } catch (DataAccessException e) {
+            throw new UnauthorizedException();
+        }
+    }
+
+    private GameData getGameData(int gameID) throws BadRequestException {
+        try {
+            return gameDAO.getGame(gameID);
+        } catch (DataAccessException e) {
+            throw new BadRequestException(e.getMessage());
+        }
+    }
+
+    private void validateColor(String color) throws BadRequestException {
+        if (color == null || color.isBlank()) {
+            throw new BadRequestException("Team color cannot be null or empty");
+        }
+        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+            throw new BadRequestException(color + " is not a valid team color");
+        }
     }
 }
