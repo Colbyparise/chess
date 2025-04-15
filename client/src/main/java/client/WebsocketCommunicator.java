@@ -34,10 +34,20 @@ public class WebsocketCommunicator extends Endpoint {
             });
 
         } catch (DeploymentException | IOException | URISyntaxException ex) {
-            throw new Exception();
+            System.err.println("Error creating WebSocket connection: " + ex.getMessage()); // Log the error
+            ex.printStackTrace(); // Log the stack trace
+            throw new WebsocketException("Failed to create WebSocket connection", ex); // Or re-throw the original
         }
 
     }
+
+    // Custom exception (optional)
+    public static class WebsocketException extends Exception {
+        public WebsocketException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
 
     @Override
     public void onOpen(Session session, EndpointConfig config) {
@@ -47,12 +57,10 @@ public class WebsocketCommunicator extends Endpoint {
         if (message.contains("\"serverMessageType\":\"NOTIFICATION\"")) {
             Notification notif = new Gson().fromJson(message, Notification.class);
             printNotification(notif.getMessage());
-        }
-        else if (message.contains("\"serverMessageType\":\"ERROR\"")) {
+        } else if (message.contains("\"serverMessageType\":\"ERROR\"")) {
             Error error = new Gson().fromJson(message, Error.class);
             printNotification(error.getMessage());
-        }
-        else if (message.contains("\"serverMessageType\":\"LOAD_GAME\"")) {
+        } else if (message.contains("\"serverMessageType\":\"LOAD_GAME\"")) {
             LoadGame loadGame = new Gson().fromJson(message, LoadGame.class);
             printLoadedGame(loadGame.getGame());
         }
@@ -71,6 +79,12 @@ public class WebsocketCommunicator extends Endpoint {
     }
 
     public void sendMessage(String message) {
-        this.session.getAsyncRemote().sendText(message);
+        if (session != null && session.isOpen()) {
+            this.session.getAsyncRemote().sendText(message);
+        } else {
+            System.err.println("WebSocket session is not open or is null.  Cannot send message.");
+            // Consider throwing an exception or returning an error code here,
+            // depending on how you want to handle this situation.
+        }
     }
 }

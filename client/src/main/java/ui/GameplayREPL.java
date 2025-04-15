@@ -108,15 +108,27 @@ public class GameplayREPL {
 
     private void handleMakeMove(String[] input) {
         if (input.length >= 3 && input[1].matches("[a-h][1-8]") && input[2].matches("[a-h][1-8]")) {
-            ChessPosition from = new ChessPosition(input[1].charAt(1) - '0', input[1].charAt(0) - ('a'-1));
-            ChessPosition to = new ChessPosition(input[2].charAt(1) - '0',input[2].charAt(0) - ('a'-1));
+            ChessPosition from = new ChessPosition(input[1].charAt(1) - '0', input[1].charAt(0) - ('a' - 1));
+            ChessPosition to = new ChessPosition(input[2].charAt(1) - '0', input[2].charAt(0) - ('a' - 1));
 
             ChessPiece.PieceType promotion = null;
-            if (input.length == 4) {
-                promotion = getPieceType(input[3]);
-                if (promotion == null) { // If it was improperly typed by the user
-                    out.println("Please provide proper promotion piece name (ex: 'knight')");
-                    printMakeMove();
+
+            ChessPiece movingPiece = game.getBoard().getPiece(from);
+            if (movingPiece != null && movingPiece.getPieceType() == ChessPiece.PieceType.PAWN) {
+                boolean isPromotionRank = (color == ChessGame.TeamColor.WHITE && to.getRow() == 8)
+                        || (color == ChessGame.TeamColor.BLACK && to.getRow() == 1);
+
+                if (isPromotionRank) {
+                    if (input.length == 4) {
+                        promotion = getPieceType(input[3]);
+                        if (promotion == null || promotion == ChessPiece.PieceType.PAWN) {
+                            out.println("Invalid promotion piece. Please use queen, rook, bishop, or knight.");
+                            return;
+                        }
+                    } else {
+                        out.println("You must specify a promotion piece (queen, rook, bishop, or knight).");
+                        return;
+                    }
                 }
             }
 
