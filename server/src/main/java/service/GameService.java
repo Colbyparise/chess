@@ -6,6 +6,7 @@ import dataaccess.*;
 import model.AuthData;
 import model.GameData;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameService {
@@ -93,33 +94,35 @@ public class GameService {
         AuthData authData = validateAuth(authToken);
         GameData gameData = getGameData(gameID);
 
-
         validateColor(color);
 
         String updatedWhiteUser = gameData.whiteUsername();
         String updatedBlackUser = gameData.blackUsername();
 
         if (color.equals("WHITE")) {
-            if (updatedWhiteUser != null) {
+            // Allow joining if slot is open OR it's the same user rejoining
+            if (updatedWhiteUser != null && !updatedWhiteUser.equals(authData.username())) {
                 return false;
-            } else {
-                updatedWhiteUser = authData.username();
             }
+            updatedWhiteUser = authData.username();
         } else {
-            if (updatedBlackUser != null) {
+            if (updatedBlackUser != null && !updatedBlackUser.equals(authData.username())) {
                 return false;
-            } else {
-                updatedBlackUser = authData.username();
             }
+            updatedBlackUser = authData.username();
         }
 
-        try {
-            gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
-        } catch (DataAccessException e) {
-            throw new BadRequestException(e.getMessage());
-        }
-        return true;
+        // Only update the game if something actually changed
+        if (!Objects.equals(updatedWhiteUser, gameData.whiteUsername()) || !Objects.equals(updatedBlackUser, gameData.blackUsername())) {
+            try {
+                gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
+            } catch (DataAccessException e) {
+                throw new BadRequestException(e.getMessage());
+            }}
+
+            return true;
     }
+
 
 
     public void clear() {
