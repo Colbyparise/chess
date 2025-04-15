@@ -2,7 +2,6 @@ package ui;
 
 public class Printer {
 
-
     private String username;
 
     public String getUsername() {
@@ -19,7 +18,7 @@ public class Printer {
     }
 
     public void printWelcome() {
-        System.out.println("Welcome to Chess client!");
+        System.out.println("Welcome to Chess!");
     }
 
     public void printError(String err) {
@@ -28,16 +27,16 @@ public class Printer {
     }
 
     public void printResponse(String response) {
-        System.out.println(EscapeSequences.SET_TEXT_BOLD_AND_BLUE + response);
+        System.out.println(EscapeSequences.SET_TEXT_COLOR_WHITE + EscapeSequences.SET_TEXT_BOLD + response);
     }
 
     public void printName() {
-        System.out.print(EscapeSequences.SET_TEXT_NORMAL_AND_WHITE + EscapeSequences.SET_TEXT_BOLD +
+        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE + EscapeSequences.SET_TEXT_BOLD +
                 "[" + username + "]: ");
     }
 
     public void printSubCommand(String sub) {
-        System.out.print(EscapeSequences.SET_TEXT_NORMAL_AND_WHITE + EscapeSequences.SET_TEXT_BOLD +
+        System.out.print(EscapeSequences.SET_TEXT_COLOR_WHITE + EscapeSequences.SET_TEXT_BOLD +
                 "\n" + sub + ": ");
     }
 }

@@ -297,7 +297,7 @@ public class CommandEval {
 
     private static void displayGame(GameData game, StringBuilder builder, int i) {
         builder.append("\n");
-        builder.append(EscapeSequences.SET_TEXT_BOLD_AND_BLUE);
+        builder.append(EscapeSequences.SET_TEXT_COLOR_BLUE + EscapeSequences.SET_TEXT_BOLD);
         builder.append(i);
         builder.append(" - ");
         builder.append(game.gameName());
@@ -347,8 +347,8 @@ public class CommandEval {
     }
 
     private String commandInfo(String name, String info, String format) {
-        return EscapeSequences.SET_TEXT_BOLD_AND_BLUE + name + "\n" +
-                "   " + EscapeSequences.SET_TEXT_NORMAL_AND_WHITE + info + "\n" +
+        return EscapeSequences.SET_TEXT_COLOR_BLUE + EscapeSequences.SET_TEXT_BOLD + name + "\n" +
+                "   " + EscapeSequences.SET_TEXT_COLOR_WHITE + info + "\n" +
                 "   format: " + EscapeSequences.SET_TEXT_COLOR_GREEN + format + "\n";
     }
 
@@ -375,9 +375,8 @@ public class CommandEval {
         var board = game.getBoard();
         StringBuilder builder = new StringBuilder();
         boolean highlight = highlightedPos != null;
-        //Print column letters
         if (playerColor == ChessGame.TeamColor.BLACK) {
-            //black perspective
+
             builder.append(BLACK_COLS);
             builder.append("\n");
             for (int i = 1; i <= 8; i++) {
@@ -387,7 +386,6 @@ public class CommandEval {
 
         }
         else {
-            //white perspective
             builder.append(WHITE_COLS);
             builder.append("\n");
             for (int i = 8; i >= 1; i--) {
@@ -425,12 +423,10 @@ public class CommandEval {
             boolean isDarkSquare = (row + j) % 2 == 0;
             int col = jOffset + (jMult * j);
             if (highlighted != null && highlighted[col - 1]) {
-                //green is highlighted
-                builder.append(isDarkSquare ? EscapeSequences.SET_BG_COLOR_DARK_GREEN : EscapeSequences.SET_BG_COLOR_LIGHTER_GREEN);
+                builder.append(isDarkSquare ? EscapeSequences.SET_BG_COLOR_DARK_GREEN : EscapeSequences.SET_BG_COLOR_GREEN);
             }
             else {
-                //normal color
-                builder.append(isDarkSquare ? EscapeSequences.SET_BG_COLOR_BROWN : EscapeSequences.SET_BG_COLOR_LIGHT_GREY);
+                builder.append(isDarkSquare ? EscapeSequences.SET_BG_COLOR_BLACK: EscapeSequences.SET_BG_COLOR_LIGHT_GREY);
             }
             var piece = board.getPiece(new ChessPosition(row, col));
             builder.append(printPiece(piece));

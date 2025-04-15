@@ -10,49 +10,44 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionManager {
-    public final ConcurrentHashMap<String, Connection> connections = new ConcurrentHashMap<>();
 
-    private Gson gson;
-
-    public ConnectionManager() {
-        gson = new Gson();
-    }
+    private final ConcurrentHashMap<String, Connection> connections = new ConcurrentHashMap<>();
+    private final Gson gson = new Gson();
 
     public void add(String username, int gameId, Session session) {
-        var connection = new Connection(username, gameId, session);
+        Connection connection = new Connection(username, gameId, session);
         connections.put(username, connection);
     }
 
-    public void remove(String visitorName) {
-        connections.remove(visitorName);
+    public void remove(String username) {
+        connections.remove(username);
     }
 
-    public List<String> getGameConnections(int id) {
-        var returnVal = new ArrayList<String>();
-        for (var c : connections.values()) {
-            if (c.gameId == id) {
-                returnVal.add(c.username);
+    public List<String> getGameConnections(int gameId) {
+        List<String> userList = new ArrayList<>();
+        for (Connection conn : connections.values()) {
+            if (conn.gameId == gameId) {
+                userList.add(conn.username);
             }
         }
-        return returnVal;
+        return userList;
     }
 
-    public void broadcast(String excludeUsername, int gameId, ServerMessage notification) throws IOException {
-        var removeList = new ArrayList<Connection>();
-        for (var c : connections.values()) {
-            if (c.session.isOpen()) {
-                if (c.gameId == gameId && !c.username.equals(excludeUsername)) {
-                    c.send(gson.toJson(notification));
+    public void broadcast(String excludeUsername, int gameId, ServerMessage message) throws IOException {
+        List<Connection> toRemove = new ArrayList<>();
+
+        for (Connection conn : connections.values()) {
+            if (conn.session.isOpen()) {
+                if (conn.gameId == gameId && !conn.username.equals(excludeUsername)) {
+                    conn.send(gson.toJson(message));
                 }
-            }
-            else {
-                removeList.add(c);
+            } else {
+                toRemove.add(conn);
             }
         }
 
-        // Clean up any connections that were left open.
-        for (var c : removeList) {
-            connections.remove(c.username);
+        for (Connection conn : toRemove) {
+            connections.remove(conn.username);
         }
     }
 }

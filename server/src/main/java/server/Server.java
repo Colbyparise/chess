@@ -24,12 +24,12 @@ public class Server {
 
     // HTTP request handlers
     private final ClearHandler clearHandler;
-    private final RegisterHandler registerHandler;
-    private final LoginHandler loginHandler;
-    private final LogoutHandler logoutHandler;
+    private final RegHandler registerHandler;
+    private final InHandler loginHandler;
+    private final OutHandler logoutHandler;
     private final ListGamesHandler listGamesHandler;
     private final JoinGameHandler joinGameHandler;
-    private final CreateGameHandler createGameHandler;
+    private final CreateHandler createGameHandler;
 
     // DAOs
     private final AuthDAO authDAO;
@@ -56,12 +56,12 @@ public class Server {
 
         // Initialize handlers
         this.clearHandler = new ClearHandler(authDAO, userDAO, gameDAO);
-        this.registerHandler = new RegisterHandler(userDAO, authDAO);
-        this.loginHandler = new LoginHandler(userDAO, authDAO);
-        this.logoutHandler = new LogoutHandler(authDAO);
+        this.registerHandler = new RegHandler(userDAO, authDAO);
+        this.loginHandler = new InHandler(userDAO, authDAO);
+        this.logoutHandler = new OutHandler(authDAO);
         this.listGamesHandler = new ListGamesHandler(authDAO, gameDAO);
         this.joinGameHandler = new JoinGameHandler(authDAO, gameDAO);
-        this.createGameHandler = new CreateGameHandler(authDAO, gameDAO);
+        this.createGameHandler = new CreateHandler(authDAO, gameDAO);
     }
 
     public int run(int port) {
@@ -101,7 +101,7 @@ public class Server {
         } catch (UnauthorizedException e) {
             res.status(401);
             return gson.toJson(new MessageError(e.getMessage()));
-        } catch (TakenException e) {
+        } catch (DatabaseException e) {
             res.status(403);
             return gson.toJson(new MessageError(e.getMessage()));
         } catch (DataAccessException e) {

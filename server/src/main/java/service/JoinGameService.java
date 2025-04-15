@@ -2,7 +2,7 @@ package service;
 
 import dataaccess.BadRequestException;
 import dataaccess.DataAccessException;
-import dataaccess.TakenException;
+import dataaccess.DatabaseException;
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.GameDAO;
 
@@ -47,10 +47,10 @@ public class JoinGameService {
         GameData updatedGame;
 
         if ("WHITE".equals(requestedColor)) {
-            if (white != null) throw new TakenException("Error: already taken");
+            if (white != null) throw new DatabaseException("Error: already taken");
             updatedGame = new GameData(game.gameID(), session.username(), black, game.gameName(), game.game());
         } else {
-            if (black != null) throw new TakenException("Error: already taken");
+            if (black != null) throw new DatabaseException("Error: already taken");
             updatedGame = new GameData(game.gameID(), white, session.username(), game.gameName(), game.game());
         }
 

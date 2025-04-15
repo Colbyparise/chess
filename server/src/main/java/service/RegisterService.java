@@ -2,7 +2,7 @@ package service;
 
 import dataaccess.BadRequestException;
 import dataaccess.DataAccessException;
-import dataaccess.TakenException;
+import dataaccess.DatabaseException;
 import dataaccess.interfaces.AuthDAO;
 import dataaccess.interfaces.UserDAO;
 
@@ -29,7 +29,7 @@ public class RegisterService {
         }
 
         if (userDAO.getUser(newUser.username()) != null) {
-            throw new TakenException("Error: already taken");
+            throw new DatabaseException("Error: already taken");
         }
 
         var hashedPassword = BCrypt.hashpw(newUser.password(), BCrypt.gensalt());

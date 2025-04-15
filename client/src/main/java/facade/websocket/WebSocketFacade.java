@@ -1,6 +1,5 @@
 package facade.websocket;
 
-
 import chess.ChessMove;
 import com.google.gson.Gson;
 import network.ResponseException;
@@ -14,17 +13,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-//need to extend Endpoint for websocket to work properly
 public class WebSocketFacade extends Endpoint {
 
-    Session session;
-    Printer printer;
-    Gson gson;
+    private Session session;
+    private Printer printer;
+    private Gson gson;
 
     public WebSocketFacade(String url, Printer printer, CommandEval eval) throws ResponseException {
         try {
             gson = new Gson();
-
             url = url.replace("http", "ws");
             URI socketURI = new URI(url + "/ws");
             this.printer = printer;
@@ -32,63 +29,56 @@ public class WebSocketFacade extends Endpoint {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
             this.session = container.connectToServer(this, socketURI);
 
-            //set message handler
-            this.session.addMessageHandler(new MessageHandler.Whole<String>() {
-                @Override
-                public void onMessage(String message) {
-                    ServerMessage notification = new Gson().fromJson(message, ServerMessage.class);
-                    switch (notification.getServerMessageType()) {
-                        case NOTIFICATION -> printer.notify(notification.getMessage());
-                        case LOAD_GAME -> eval.loadGame(notification.getGame());
-                        default -> printer.printError(notification.getErrorMessage());
-                    }
-                }
+            this.session.addMessageHandler((MessageHandler.Whole<String>) message -> {
+                ServerMessage notification = gson.fromJson(message, ServerMessage.class);
+                handleServerMessage(notification, eval);
             });
         } catch (DeploymentException | IOException | URISyntaxException ex) {
             throw new ResponseException(500, ex.getMessage());
         }
     }
 
-    //Endpoint requires this method, but you don't have to do anything
     @Override
     public void onOpen(Session session, EndpointConfig endpointConfig) {
+        // No action needed on open
+    }
+
+    private void handleServerMessage(ServerMessage notification, CommandEval eval) {
+        switch (notification.getServerMessageType()) {
+            case NOTIFICATION:
+                printer.notify(notification.getMessage());
+                break;
+            case LOAD_GAME:
+                eval.loadGame(notification.getGame());
+                break;
+            default:
+                printer.printError(notification.getErrorMessage());
+                break;
+        }
+    }
+
+    private void sendMessage(ClientMessage.ClientMessageType type, String auth, int id, ChessMove move) throws ResponseException {
+        try {
+            ClientMessage msg = new ClientMessage(type, auth, id, move);
+            this.session.getBasicRemote().sendText(gson.toJson(msg));
+        } catch (IOException ex) {
+            throw new ResponseException(500, ex.getMessage());
+        }
     }
 
     public void joinGame(String auth, int id) throws ResponseException {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.CONNECT, auth, id);
-            this.session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            throw new ResponseException(500, ex.getMessage());
-        }
+        sendMessage(ClientMessage.ClientMessageType.CONNECT, auth, id, null);
     }
 
     public void leaveGame(String auth, int id) throws ResponseException {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.LEAVE, auth, id);
-            this.session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            throw new ResponseException(500, ex.getMessage());
-        }
+        sendMessage(ClientMessage.ClientMessageType.LEAVE, auth, id, null);
     }
 
     public void resign(String auth, int id) throws ResponseException {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.RESIGN, auth, id);
-            this.session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            throw new ResponseException(500, ex.getMessage());
-        }
+        sendMessage(ClientMessage.ClientMessageType.RESIGN, auth, id, null);
     }
 
     public void move(String auth, int id, ChessMove move) throws ResponseException {
-        try {
-            var msg = new ClientMessage(ClientMessage.ClientMessageType.MAKE_MOVE, auth, id, move);
-            this.session.getBasicRemote().sendText(gson.toJson(msg));
-        } catch (IOException ex) {
-            throw new ResponseException(500, ex.getMessage());
-        }
+        sendMessage(ClientMessage.ClientMessageType.MAKE_MOVE, auth, id, move);
     }
-
-
 }

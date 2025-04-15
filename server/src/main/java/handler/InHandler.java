@@ -1,25 +1,24 @@
 package handler;
 
-import dataaccess.interfaces.AuthDAO;
-import dataaccess.interfaces.UserDAO;
-import service.Login;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
-
+import dataaccess.interfaces.AuthDAO;
+import dataaccess.interfaces.UserDAO;
 import network.http.LoginRequest;
+import service.Login;
 import spark.Request;
 import spark.Response;
 
-public class LoginHandler {
-    Login service;
+public class InHandler {
 
-    public LoginHandler(UserDAO userDAO, AuthDAO authDAO) {
+    private final Login service;
 
-        service = new Login(userDAO, authDAO);
+    public InHandler(UserDAO userDAO, AuthDAO authDAO) {
+        this.service = new Login(userDAO, authDAO);
     }
 
     public String login(Request req, Response res, Gson gson) throws DataAccessException {
-        var loginRequest = gson.fromJson(req.body(), LoginRequest.class);
+        LoginRequest loginRequest = gson.fromJson(req.body(), LoginRequest.class);
         var result = service.login(loginRequest);
         return gson.toJson(result);
     }
