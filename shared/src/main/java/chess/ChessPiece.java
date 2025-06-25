@@ -1,5 +1,5 @@
 package chess;
-
+import chess.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -10,9 +10,14 @@ import java.util.Collection;
  * signature of the existing methods.
  */
 public class ChessPiece {
+    private final ChessGame.TeamColor color;
+    private final PieceType type;
 
-    public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
-    }
+    public ChessPiece(ChessGame.TeamColor pieceColor, PieceType type) {
+            this.color = pieceColor;
+            this.type = type;
+        }
+
 
     /**
      * The various different chess piece options
@@ -30,14 +35,14 @@ public class ChessPiece {
      * @return Which team this chess piece belongs to
      */
     public ChessGame.TeamColor getTeamColor() {
-        throw new RuntimeException("Not implemented");
+        return color;
     }
 
     /**
      * @return which type of chess piece this piece is
      */
     public PieceType getPieceType() {
-        throw new RuntimeException("Not implemented");
+       return type;
     }
 
     /**
@@ -48,6 +53,13 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        return new ArrayList<>();
-    }
-}
+        return switch (type) {
+            case KING -> new KingMovesCalculator().pieceMoves(board, myPosition, this);
+            case QUEEN -> new QueenMovesCalculator().pieceMoves(board, myPosition, this);
+            case ROOK -> new RookMovesCalculator().pieceMoves(board, myPosition, this);
+            case BISHOP -> new BishopMovesCalculator().pieceMoves(board, myPosition, this);
+            case KNIGHT -> new KnightMovesCalculator().pieceMoves(board, myPosition, this);
+            case PAWN -> new PawnMovesCalculator().pieceMoves(board, myPosition, this);
+        };
+    }}
+
