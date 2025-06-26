@@ -9,6 +9,11 @@ import java.util.Collection;
  * Note: You can add to this class, but you may not alter
  * signature of the existing methods.
  */
+
+// ChessPiece implements rules that define how a piece moves
+// independent of other chess rules such as check, stalemate, or checkmate.
+// My class uses PieceMovesCalculator
+
 public class ChessPiece {
     private final ChessGame.TeamColor color;
     private final PieceType type;

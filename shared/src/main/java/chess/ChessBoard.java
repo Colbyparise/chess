@@ -6,6 +6,11 @@ package chess;
  * Note: You can add to this class, but you may not alter
  * signature of the existing methods.
  */
+
+//This class stores all the uncaptured pieces in a Game.
+//It needs to support adding and removing pieces for testing,
+//as well as a resetBoard() method that sets the standard Chess starting configuration.
+
 public class ChessBoard {
     private ChessPiece[][] squares = new ChessPiece[8][8];
 
@@ -45,6 +50,37 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        throw new RuntimeException("Not implemented");
+        //Empty Board
+        squares = new ChessPiece[8][8];
+
+        //lets us do white/black instead of ChessGame.TeamColor.Black everytime
+        ChessGame.TeamColor black = ChessGame.TeamColor.BLACK;
+        ChessGame.TeamColor white = ChessGame.TeamColor.WHITE;
+
+        //adds the black pieces
+        for (int col = 0; col < 8; col++) {
+            squares[1][col] = new ChessPiece(black, ChessPiece.PieceType.PAWN);
+        }
+        squares[0][0] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
+        squares[0][1] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
+        squares[0][2] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
+        squares[0][3] = new ChessPiece(black, ChessPiece.PieceType.QUEEN);
+        squares[0][4] = new ChessPiece(black, ChessPiece.PieceType.KING);
+        squares[0][5] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
+        squares[0][6] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
+        squares[0][7] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
+
+        //adds the white pieces
+        for (int col = 0; col < 8; col++) {
+            squares[6][col] = new ChessPiece(white, ChessPiece.PieceType.PAWN);
+        }
+        squares[7][0] = new ChessPiece(white, ChessPiece.PieceType.ROOK);
+        squares[7][1] = new ChessPiece(white, ChessPiece.PieceType.KNIGHT);
+        squares[7][2] = new ChessPiece(white, ChessPiece.PieceType.BISHOP);
+        squares[7][3] = new ChessPiece(white, ChessPiece.PieceType.QUEEN);
+        squares[7][4] = new ChessPiece(white, ChessPiece.PieceType.KING);
+        squares[7][5] = new ChessPiece(white, ChessPiece.PieceType.BISHOP);
+        squares[7][6] = new ChessPiece(white, ChessPiece.PieceType.KNIGHT);
+        squares[7][7] = new ChessPiece(white, ChessPiece.PieceType.ROOK);
     }
 }

@@ -15,7 +15,8 @@ public class BishopMovesCalculator implements PieceMovesCalculator {
                 {-1, 1},
                 {-1, -1}
         };
-        return PieceMovesCalculator.horizontalMoves(board, position, row, col, color);
+        ChessGame.TeamColor team = board.getColor(position);
+        return PieceMovesCalculator.(board, position, row, col, team);
     }
 
 }
