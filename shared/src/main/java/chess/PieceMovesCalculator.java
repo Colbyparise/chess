@@ -33,6 +33,28 @@ public interface PieceMovesCalculator {
 
 
     static HashSet<ChessMove> DirectionalMoves(ChessBoard board, ChessPosition currentposition, int[][] directions, int row, int col, ChessGame.TeamColor teamColor) {
-        return null;
+        HashSet<ChessMove> moves = new HashSet<>(27);
+
+        for (int[] direction : directions) {
+            int i = 1;
+            boolean blocked = false;
+
+            while (!blocked) {
+                ChessPosition targetPos = new ChessPosition(row + direction[1] * i, col + direction[0] * i);
+
+                if (!isOnBoard(targetPos)) {
+                    blocked = true;
+                } else if (board.getPiece(targetPos) == null) {
+                    moves.add(new ChessMove(currentposition, targetPos, null));
+                } else if (board.getColor(targetPos) != teamColor) {
+                    moves.add(new ChessMove(currentposition, targetPos, null));
+                    blocked = true;
+                } else {
+                    blocked = true;
+                }
+                i++;
+            }
+        }
+        return moves;
     }
 }
