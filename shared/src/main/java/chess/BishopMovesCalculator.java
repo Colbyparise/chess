@@ -3,7 +3,7 @@ package chess;
 import java.util.HashSet;
 
 public class BishopMovesCalculator implements PieceMovesCalculator {
-    public static HashSet<ChessMove> getMoves(ChessBoard board, ChessPosition position) {
+    public static HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition position) {
         int row = position.getRow();
         int col = position.getColumn();
 
@@ -15,10 +15,5 @@ public class BishopMovesCalculator implements PieceMovesCalculator {
         };
         ChessGame.TeamColor team = board.getColor(position);
         return PieceMovesCalculator.DirectionalMoves(board, position, moves, row, col, team);
-    }
-
-    @Override
-    public HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition currentposition, ChessPiece piece) {
-        return null;
     }
 }

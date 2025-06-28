@@ -19,9 +19,9 @@ public class ChessPiece {
     private final PieceType type;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, PieceType type) {
-            this.color = pieceColor;
-            this.type = type;
-        }
+        this.color = pieceColor;
+        this.type = type;
+    }
 
 
     /**
@@ -47,7 +47,7 @@ public class ChessPiece {
      * @return which type of chess piece this piece is
      */
     public PieceType getPieceType() {
-       return type;
+        return type;
     }
 
     /**
@@ -59,12 +59,13 @@ public class ChessPiece {
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         return switch (type) {
-            case KING -> new KingMovesCalculator().calculateMoves(board, myPosition, this);
-            case QUEEN -> new QueenMovesCalculator().calculateMoves(board, myPosition, this);
-            case ROOK -> new RookMovesCalculator().calculateMoves(board, myPosition, this);
-            case BISHOP -> new BishopMovesCalculator().calculateMoves(board, myPosition, this);
-            case KNIGHT -> new KnightMovesCalculator().calculateMoves(board, myPosition, this);
-            case PAWN -> new PawnMovesCalculator().calculateMoves(board, myPosition, this);
+            case KING -> KingMovesCalculator.calculateMoves(board, myPosition);
+            case QUEEN -> QueenMovesCalculator.calculateMoves(board, myPosition);
+            case ROOK -> RookMovesCalculator.calculateMoves(board, myPosition);
+            case BISHOP -> BishopMovesCalculator.calculateMoves(board, myPosition);
+            case KNIGHT -> KnightMovesCalculator.calculateMoves(board, myPosition);
+            case PAWN -> PawnMovesCalculator.calculateMoves(board, myPosition);
         };
-    }}
+    }
+}
 

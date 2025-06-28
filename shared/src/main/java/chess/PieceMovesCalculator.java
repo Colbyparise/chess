@@ -3,7 +3,9 @@ import chess.*;
 import java.util.HashSet;
 
 public interface PieceMovesCalculator {
-    HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition currentposition, ChessPiece piece);
+    static HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition currentposition, ChessPiece piece) {
+        return null;
+    }
 
     //checks to see if piece is in the 8x8 board
     static boolean isOnBoard(ChessPosition position) {
