@@ -11,7 +11,11 @@ public class QueenMovesCalculator implements PieceMovesCalculator{
                 {1, -1},
                 {1, 1},
                 {-1, 1},
-                {-1, -1}
+                {-1, -1},
+                {0,1 },
+                {0, -1},
+                {1, 0},
+                {-1, 0}
         };
         ChessGame.TeamColor team = board.getColor(position);
         return PieceMovesCalculator.DirectionalMoves(board, position, moves, row, col, team);
