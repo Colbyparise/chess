@@ -62,29 +62,29 @@ public class ChessBoard {
 
         //adds the black pieces
         for (int col = 0; col < 8; col++) {
-            squares[1][col] = new ChessPiece(black, ChessPiece.PieceType.PAWN);
+            squares[1][col] = new ChessPiece(white, ChessPiece.PieceType.PAWN);
         }
-        squares[0][0] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
-        squares[0][1] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
-        squares[0][2] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
-        squares[0][3] = new ChessPiece(black, ChessPiece.PieceType.QUEEN);
-        squares[0][4] = new ChessPiece(black, ChessPiece.PieceType.KING);
-        squares[0][5] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
-        squares[0][6] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
-        squares[0][7] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
+        squares[0][0] = new ChessPiece(white, ChessPiece.PieceType.ROOK);
+        squares[0][1] = new ChessPiece(white, ChessPiece.PieceType.KNIGHT);
+        squares[0][2] = new ChessPiece(white, ChessPiece.PieceType.BISHOP);
+        squares[0][3] = new ChessPiece(white, ChessPiece.PieceType.QUEEN);
+        squares[0][4] = new ChessPiece(white, ChessPiece.PieceType.KING);
+        squares[0][5] = new ChessPiece(white, ChessPiece.PieceType.BISHOP);
+        squares[0][6] = new ChessPiece(white, ChessPiece.PieceType.KNIGHT);
+        squares[0][7] = new ChessPiece(white, ChessPiece.PieceType.ROOK);
 
         //adds the white pieces
         for (int col = 0; col < 8; col++) {
-            squares[6][col] = new ChessPiece(white, ChessPiece.PieceType.PAWN);
+            squares[6][col] = new ChessPiece(black, ChessPiece.PieceType.PAWN);
         }
-        squares[7][0] = new ChessPiece(white, ChessPiece.PieceType.ROOK);
-        squares[7][1] = new ChessPiece(white, ChessPiece.PieceType.KNIGHT);
-        squares[7][2] = new ChessPiece(white, ChessPiece.PieceType.BISHOP);
-        squares[7][3] = new ChessPiece(white, ChessPiece.PieceType.QUEEN);
-        squares[7][4] = new ChessPiece(white, ChessPiece.PieceType.KING);
-        squares[7][5] = new ChessPiece(white, ChessPiece.PieceType.BISHOP);
-        squares[7][6] = new ChessPiece(white, ChessPiece.PieceType.KNIGHT);
-        squares[7][7] = new ChessPiece(white, ChessPiece.PieceType.ROOK);
+        squares[7][0] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
+        squares[7][1] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
+        squares[7][2] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
+        squares[7][3] = new ChessPiece(black, ChessPiece.PieceType.QUEEN);
+        squares[7][4] = new ChessPiece(black, ChessPiece.PieceType.KING);
+        squares[7][5] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
+        squares[7][6] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
+        squares[7][7] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
     }
 
 
@@ -94,7 +94,7 @@ public class ChessBoard {
         for (int row = 7; row >= 0; row--) {
             output.append("|");
             for (int col = 0; col < 8; col++) {
-                output.append(squares[col][row] != null ? squares[col][row].toString() : " ");
+                output.append(squares[row][col] != null ? squares[row][col].toString() : " ");
                 output.append("|");
             }
             output.append("\n");
@@ -112,6 +112,11 @@ public class ChessBoard {
         }
         ChessBoard other = (ChessBoard) o;
         return Arrays.deepEquals(squares, other.squares);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(squares);
     }
 
 

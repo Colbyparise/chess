@@ -67,5 +67,21 @@ public class ChessPiece {
             case PAWN -> PawnMovesCalculator.calculateMoves(board, myPosition);
         };
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ChessPiece other = (ChessPiece) o;
+        return color == other.color && type == other.type;
+    }
+    @Override
+    public int hashCode() {
+        return 31 * color.hashCode() + type.hashCode();
+    }
 }
 
