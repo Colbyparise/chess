@@ -165,7 +165,23 @@ public class ChessGame {
      */
     //returns true if given team has no way to protect their king
     public boolean isInCheckmate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        if (!isInCheck(teamColor)) {
+            return false;
+        }
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition position = new ChessPosition(row, col);
+                ChessPiece piece = chessBoard.getPiece(position);
+
+                if (piece != null && piece.getTeamColor() == teamColor) {
+                    Collection<ChessMove> moves = validMoves(position);
+                    if (moves != null && !moves.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /**
