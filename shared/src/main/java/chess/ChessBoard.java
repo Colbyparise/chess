@@ -2,22 +2,25 @@ package chess;
 
 import java.util.Arrays;
 
-/**
- * A chessboard that can hold and rearrange chess pieces.
- * <p>
- * Note: You can add to this class, but you may not alter
- * signature of the existing methods.
- */
-
-//This class stores all the uncaptured pieces in a Game.
-//It needs to support adding and removing pieces for testing,
-//as well as a resetBoard() method that sets the standard Chess starting configuration.
 
 public class ChessBoard {
     private ChessPiece[][] squares = new ChessPiece[8][8];
 
     public ChessBoard() {
 
+    }
+    public ChessBoard copy() {
+        ChessBoard newBoard = new ChessBoard();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                ChessPiece piece = this.squares[row][col];
+                if (piece != null) {
+                    // Assuming ChessPiece has a copyable constructor
+                    newBoard.squares[row][col] = new ChessPiece(piece.getTeamColor(), piece.getPieceType());
+                }
+            }
+        }
+        return newBoard;
     }
 
     /**
