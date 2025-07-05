@@ -2,6 +2,7 @@ package chess;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -194,13 +195,41 @@ public class ChessGame {
 
     //returns true if team has no legal moves but king is not in check
     public boolean isInStalemate(TeamColor teamColor) {
+        if (isInCheck(teamColor)) {
+            return false;
+        }
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition position = new ChessPosition(row, col);
+                ChessPiece piece = chessBoard.getPiece(position);
+                Collection<ChessMove> moves;
+                if (piece != null && teamColor == piece.getTeamColor()) {
+                    moves = validMoves(position);
+                    if (moves != null && !moves.isEmpty()) {
+                        return false;
+                    }
+                }
+            }
+        }
         return true;
     }
+
+
+
+    public boolean cantMove(TeamColor teamColor) {
+        return true;
+    }
+
+
+
     /**
      * Sets this game's chessboard with a given board
      *
      * @param board the new board to use
      */
+
+
+
     public void setBoard(ChessBoard board) {
         this.chessBoard = board;
     }
@@ -220,5 +249,15 @@ public class ChessGame {
 
     public boolean getGameOver() {
         return gameOver;
+    }
+
+    @Override
+    public String toString() {
+         return "ChessGame{" + "teamTurn=" + teamColor + ", board =" + chessBoard + '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(teamColor, chessBoard);
     }
 }
