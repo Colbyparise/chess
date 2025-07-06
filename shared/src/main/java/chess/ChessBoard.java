@@ -5,6 +5,12 @@ import java.util.Arrays;
 
 public class ChessBoard {
     private ChessPiece[][] squares = new ChessPiece[8][8];
+    public boolean whiteKingMoved = false;
+    public boolean blackKingMoved = false;
+    public boolean whiteKingsideRookMoved = false;
+    public boolean whiteQueensideRookMoved = false;
+    public boolean blackKingsideRookMoved = false;
+    public boolean blackQueensideRookMoved = false;
 
     public ChessBoard() {
 
@@ -75,8 +81,9 @@ public class ChessBoard {
         squares[7][5] = new ChessPiece(black, ChessPiece.PieceType.BISHOP);
         squares[7][6] = new ChessPiece(black, ChessPiece.PieceType.KNIGHT);
         squares[7][7] = new ChessPiece(black, ChessPiece.PieceType.ROOK);
-    }
 
+
+    }
 
     @Override
     public String toString() {
