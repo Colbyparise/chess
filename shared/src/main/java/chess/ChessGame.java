@@ -21,12 +21,6 @@ public class ChessGame {
         setTeamTurn(TeamColor.WHITE);
     }
 
-    public ChessGame copy() {
-        ChessGame newGame = new ChessGame();
-        newGame.chessBoard = this.chessBoard.copy();
-        newGame.teamColor = this.teamColor;
-        return newGame;
-    }
 
     /**
      * @return Which team's turn it is
@@ -48,7 +42,11 @@ public class ChessGame {
      */
     public enum TeamColor {
         WHITE,
-        BLACK
+        BLACK;
+
+        public String toString() {
+            return this == WHITE ? "white" : "black";
+        }
     }
 
     /**
@@ -69,15 +67,17 @@ public class ChessGame {
         Collection<ChessMove> validMoves = new HashSet<>();
 
         for (ChessMove move : legalMove) {
-            ChessGame gameCopy = this.copy();
-            try {
-                gameCopy.makeMove(move);
-                if (!gameCopy.isInCheck(piece.getTeamColor())) {
-                    validMoves.add(move);
-                }
-            } catch (InvalidMoveException e) {
+            ChessPiece target = chessBoard.getPiece(move.getEndPosition());
 
+            chessBoard.addPiece(startPosition, null);
+            chessBoard.addPiece(move.getEndPosition(), piece);
+
+            if (!isInCheck(piece.getTeamColor())) {
+                validMoves.add(move);
             }
+
+            chessBoard.addPiece(move.getEndPosition(), target);
+            chessBoard.addPiece(startPosition, piece);
         }
         return validMoves;
 
@@ -166,24 +166,9 @@ public class ChessGame {
      */
     //returns true if given team has no way to protect their king
     public boolean isInCheckmate(TeamColor teamColor) {
-        if (!isInCheck(teamColor)) {
-            return false;
-        }
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition position = new ChessPosition(row, col);
-                ChessPiece piece = chessBoard.getPiece(position);
-
-                if (piece != null && piece.getTeamColor() == teamColor) {
-                    Collection<ChessMove> moves = validMoves(position);
-                    if (moves != null && !moves.isEmpty()) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
+        return isInCheck(teamColor) && cantMove(teamColor);
     }
+
 
     /**
      * Determines if the given team is in stalemate, which here is defined as having
@@ -195,14 +180,17 @@ public class ChessGame {
 
     //returns true if team has no legal moves but king is not in check
     public boolean isInStalemate(TeamColor teamColor) {
-        if (isInCheck(teamColor)) {
-            return false;
-        }
+        return !isInCheck(teamColor) && cantMove(teamColor);
+    }
+
+
+    public boolean cantMove(TeamColor teamColor) {
         for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPosition position = new ChessPosition(row, col);
+            for (int column = 1; column <= 8; column++) {
+                ChessPosition position = new ChessPosition(row, column);
                 ChessPiece piece = chessBoard.getPiece(position);
                 Collection<ChessMove> moves;
+
                 if (piece != null && teamColor == piece.getTeamColor()) {
                     moves = validMoves(position);
                     if (moves != null && !moves.isEmpty()) {
@@ -214,11 +202,6 @@ public class ChessGame {
         return true;
     }
 
-
-
-    public boolean cantMove(TeamColor teamColor) {
-        return true;
-    }
 
 
 
@@ -254,6 +237,18 @@ public class ChessGame {
     @Override
     public String toString() {
          return "ChessGame{" + "teamTurn=" + teamColor + ", board =" + chessBoard + '}';
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
+        ChessGame chessGame = (ChessGame) object;
+        return teamColor == chessGame.teamColor && Objects.equals(chessBoard, chessGame.chessBoard);
     }
 
     @Override
