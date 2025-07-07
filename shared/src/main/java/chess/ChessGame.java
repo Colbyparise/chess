@@ -16,6 +16,8 @@ public class ChessGame {
     private TeamColor teamColor;
     private ChessBoard chessBoard;
     private boolean gameOver;
+    private ChessPosition enPassantVulnerablePawn;
+
 
     public ChessGame() {
         chessBoard = new ChessBoard();
@@ -69,15 +71,6 @@ public class ChessGame {
         Collection<ChessMove> legalMove = (HashSet<ChessMove>) chessBoard.getPiece(startPosition).pieceMoves(chessBoard, startPosition);
         Collection<ChessMove> validMoves = new HashSet<>();
 
-        if (piece.getPieceType() == ChessPiece.PieceType.KING) {
-            if (canCastleKingside(piece.getTeamColor())) {
-                validMoves.add(new ChessMove(startPosition, new ChessPosition(row, 7), null));
-            }
-            if (canCastleQueenside(piece.getTeamColor())) {
-                validMoves.add(new ChessMove(startPosition, new ChessPosition(row, 3), null));
-            }
-        }
-
 
         for (ChessMove move : legalMove) {
             ChessPiece target = chessBoard.getPiece(move.getEndPosition());
@@ -92,6 +85,15 @@ public class ChessGame {
             chessBoard.addPiece(move.getEndPosition(), target);
             chessBoard.addPiece(startPosition, piece);
         }
+        if (piece.getPieceType() == ChessPiece.PieceType.KING) {
+            if (canCastleKingside(piece.getTeamColor())) {
+                validMoves.add(new ChessMove(startPosition, new ChessPosition(row, 7), null));
+            }
+            if (canCastleQueenside(piece.getTeamColor())) {
+                validMoves.add(new ChessMove(startPosition, new ChessPosition(row, 3), null));
+            }
+        }
+
         return validMoves;
 
     }
@@ -106,6 +108,7 @@ public class ChessGame {
     public void makeMove(ChessMove move) throws InvalidMoveException {
         ChessPiece piece = chessBoard.getPiece(move.getStartPosition());
         ChessPosition startPosition = move.getStartPosition();
+
 
         if (piece == null || piece.getTeamColor() != teamColor) {
             throw new InvalidMoveException("No valid piece / not your turn.");
@@ -123,8 +126,6 @@ public class ChessGame {
 
         chessBoard.addPiece(move.getEndPosition(), movedPiece);
         chessBoard.addPiece(move.getStartPosition(), null);
-
-        teamColor = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
 
 
         //find if king/rook have moved so that we can castle them
@@ -151,7 +152,25 @@ public class ChessGame {
         }
         teamColor = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
 
+        enPassantVulnerablePawn = null;
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
+            int startRow = move.getStartPosition().getRow();
+            int endRow = move.getEndPosition().getRow();
 
+            // Check for 2-square advance
+            if (Math.abs(endRow - startRow) == 2) {
+                int direction = (teamColor == TeamColor.WHITE) ? 1 : -1;
+                int enPassantRow = startRow + direction;
+                enPassantVulnerablePawn = new ChessPosition(enPassantRow, move.getStartPosition().getColumn());
+            }
+
+            // Check for en passant capture
+            if (move.getEndPosition().equals(enPassantVulnerablePawn)) {
+                int capturedPawnRow = move.getStartPosition().getRow();
+                int capturedPawnCol = move.getEndPosition().getColumn();
+                chessBoard.addPiece(new ChessPosition(capturedPawnRow, capturedPawnCol), null); // remove captured pawn
+            }
+        }
     }
 
     /**
