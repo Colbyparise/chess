@@ -122,42 +122,41 @@ public class ChessGame {
      */
     //returns true if the specified team's King could be captured
     public boolean isInCheck(TeamColor teamColor) {
-        ChessPosition kingPosition = findKingPosition(teamColor);
-        if (kingPosition == null) return false;
-
-        return isSquareAttacked(kingPosition, teamColor);
-    }
-
-    private ChessPosition findKingPosition(TeamColor teamColor) {
+        ChessPosition kingPosition = null;
+        //looks for the king
         for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
+            for (int col = 1; col <=8; col++) {
                 ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, col));
                 if (piece != null && piece.getPieceType() == ChessPiece.PieceType.KING && piece.getTeamColor() == teamColor) {
-                    return new ChessPosition(row, col);
+                    kingPosition = new ChessPosition(row, col);
+                    break;
                 }
             }
+            if (kingPosition != null) {
+                break;
+            }
         }
-        return null;
-    }
+        if (kingPosition == null) {
+            return false;
+        }
 
-    private boolean isSquareAttacked(ChessPosition square, TeamColor teamColor) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
-                ChessPosition pos = new ChessPosition(row, col);
-                ChessPiece piece = chessBoard.getPiece(pos);
-                if (piece != null && piece.getTeamColor() != teamColor) {
-                    var moves = piece.pieceMoves(chessBoard, pos);
+                ChessPosition position = new ChessPosition(row, col);
+                ChessPiece opponentPiece = chessBoard.getPiece(position);
+
+                if (opponentPiece != null && opponentPiece.getTeamColor() != teamColor) {
+                    var moves = opponentPiece.pieceMoves(chessBoard, position);
                     for (ChessMove move : moves) {
-                        if (move.getEndPosition().equals(square)) {
-                            return true;
-                        }
+                        if (move.getEndPosition().equals(kingPosition)) {
+                            return true;                        }
                     }
                 }
             }
         }
+
         return false;
     }
-
 
     /**
      * Determines if the given team is in checkmate
