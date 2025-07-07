@@ -15,6 +15,6 @@ public class RookMovesCalculator implements PieceMovesCalculator{
                 {0, -1}
         };
         ChessGame.TeamColor team = board.getColor(position);
-        return PieceMovesCalculator.DirectionalMoves(board, position, moves, row, col, team);
+        return PieceMovesCalculator.directionalMoves(board, position, moves, row, col, team);
     }
 }

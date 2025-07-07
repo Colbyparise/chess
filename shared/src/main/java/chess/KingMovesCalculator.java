@@ -19,6 +19,6 @@ public class KingMovesCalculator implements PieceMovesCalculator{
                 {-1, 0}
         };
         ChessGame.TeamColor team = board.getColor(position);
-        return PieceMovesCalculator.StaticMoves(position, moves, board);
+        return PieceMovesCalculator.staticMoves(position, moves, board);
     }
 }

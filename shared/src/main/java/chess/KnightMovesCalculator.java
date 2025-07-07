@@ -19,6 +19,6 @@ public class KnightMovesCalculator implements PieceMovesCalculator{
                 {-2, -1}
 
         };;
-        return PieceMovesCalculator.StaticMoves(position, moves, board);
+        return PieceMovesCalculator.staticMoves(position, moves, board);
     }
 }

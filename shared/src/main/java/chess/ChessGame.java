@@ -122,41 +122,42 @@ public class ChessGame {
      */
     //returns true if the specified team's King could be captured
     public boolean isInCheck(TeamColor teamColor) {
-        ChessPosition kingPosition = null;
-        //looks for the king
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <=8; col++) {
-                ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, col));
-                if (piece != null && piece.getPieceType() == ChessPiece.PieceType.KING && piece.getTeamColor() == teamColor) {
-                    kingPosition = new ChessPosition(row, col);
-                    break;
-                }
-            }
-            if (kingPosition != null) {
-                break;
-            }
-        }
-        if (kingPosition == null) {
-            return false;
-        }
+        ChessPosition kingPosition = findKingPosition(teamColor);
+        if (kingPosition == null) return false;
 
+        return isSquareAttacked(kingPosition, teamColor);
+    }
+
+    private ChessPosition findKingPosition(TeamColor teamColor) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
-                ChessPosition position = new ChessPosition(row, col);
-                ChessPiece opponentPiece = chessBoard.getPiece(position);
+                ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, col));
+                if (piece != null && piece.getPieceType() == ChessPiece.PieceType.KING && piece.getTeamColor() == teamColor) {
+                    return new ChessPosition(row, col);
+                }
+            }
+        }
+        return null;
+    }
 
-                if (opponentPiece != null && opponentPiece.getTeamColor() != teamColor) {
-                    var moves = opponentPiece.pieceMoves(chessBoard, position);
+    private boolean isSquareAttacked(ChessPosition square, TeamColor teamColor) {
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition pos = new ChessPosition(row, col);
+                ChessPiece piece = chessBoard.getPiece(pos);
+                if (piece != null && piece.getTeamColor() != teamColor) {
+                    var moves = piece.pieceMoves(chessBoard, pos);
                     for (ChessMove move : moves) {
-                        if (move.getEndPosition().equals(kingPosition)) {
-                            return true;                        }
+                        if (move.getEndPosition().equals(square)) {
+                            return true;
+                        }
                     }
                 }
             }
         }
-
         return false;
     }
+
 
     /**
      * Determines if the given team is in checkmate

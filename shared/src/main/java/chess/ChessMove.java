@@ -47,16 +47,16 @@ public record ChessMove(ChessPosition getStartPosition, ChessPosition getEndPosi
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(Object object) {
+        if (this == object) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (object == null || getClass() != object.getClass()) {
             return false;
         }
-        ChessMove Move = (ChessMove) o;
-        return Objects.equals(getStartPosition, Move.getStartPosition)
-                && Objects.equals(getEndPosition, Move.getEndPosition)
-                && getPromotionPiece == Move.getPromotionPiece;
+        ChessMove move = (ChessMove) object;
+        return Objects.equals(getStartPosition, move.getStartPosition)
+                && Objects.equals(getEndPosition, move.getEndPosition)
+                && getPromotionPiece == move.getPromotionPiece;
     }
 }

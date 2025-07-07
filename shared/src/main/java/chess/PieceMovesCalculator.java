@@ -1,5 +1,4 @@
 package chess;
-import chess.*;
 import java.util.HashSet;
 
 public interface PieceMovesCalculator {
@@ -15,8 +14,9 @@ public interface PieceMovesCalculator {
     }
 
 
-    //Moves that are possible using the static relative moves useful for Knight and King
-    static HashSet<ChessMove> StaticMoves(ChessPosition currPosition, int[][] relativeMoves, ChessBoard board) {
+    //Moves for Knight and King
+    static HashSet<ChessMove> staticMoves(ChessPosition currPosition,
+                                          int[][] relativeMoves, ChessBoard board) {
         HashSet<ChessMove> moves = new HashSet<>(8);
 
         int row = currPosition.getRow();
@@ -34,7 +34,8 @@ public interface PieceMovesCalculator {
     }
 
 
-    static HashSet<ChessMove> DirectionalMoves(ChessBoard board, ChessPosition currentposition, int[][] directions, int row, int col, ChessGame.TeamColor teamColor) {
+    static HashSet<ChessMove> directionalMoves(ChessBoard board, ChessPosition currentposition,
+                                               int[][] directions, int row, int col, ChessGame.TeamColor teamColor) {
         HashSet<ChessMove> moves = new HashSet<>(27);
 
         for (int[] direction : directions) {
@@ -42,7 +43,8 @@ public interface PieceMovesCalculator {
             boolean blocked = false;
 
             while (!blocked) {
-                ChessPosition targetPos = new ChessPosition(row + direction[1] * i, col + direction[0] * i);
+                ChessPosition targetPos = new ChessPosition(row + direction[1] * i,
+                        col + direction[0] * i);
 
                 if (!isOnBoard(targetPos)) {
                     blocked = true;
