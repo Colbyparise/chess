@@ -3,8 +3,6 @@ package chess;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
-import chess.ChessBoard.*;
-
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -16,8 +14,6 @@ public class ChessGame {
     private TeamColor teamColor;
     private ChessBoard chessBoard;
     private boolean gameOver;
-    private ChessPosition enPassantVulnerablePawn;
-
 
     public ChessGame() {
         chessBoard = new ChessBoard();
@@ -64,13 +60,11 @@ public class ChessGame {
     //move is valid if it is a piece move and team king is not in danger.
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         ChessPiece piece = chessBoard.getPiece(startPosition);
-        int row = startPosition.getRow();
         if (piece == null) {
             return null; //return null if no piece
         }
         Collection<ChessMove> legalMove = (HashSet<ChessMove>) chessBoard.getPiece(startPosition).pieceMoves(chessBoard, startPosition);
         Collection<ChessMove> validMoves = new HashSet<>();
-
 
         for (ChessMove move : legalMove) {
             ChessPiece target = chessBoard.getPiece(move.getEndPosition());
@@ -85,15 +79,6 @@ public class ChessGame {
             chessBoard.addPiece(move.getEndPosition(), target);
             chessBoard.addPiece(startPosition, piece);
         }
-        if (piece.getPieceType() == ChessPiece.PieceType.KING) {
-            if (canCastleKingside(piece.getTeamColor())) {
-                validMoves.add(new ChessMove(startPosition, new ChessPosition(row, 7), null));
-            }
-            if (canCastleQueenside(piece.getTeamColor())) {
-                validMoves.add(new ChessMove(startPosition, new ChessPosition(row, 3), null));
-            }
-        }
-
         return validMoves;
 
     }
@@ -107,8 +92,6 @@ public class ChessGame {
     //move is illegal if not valid for the piece at starting location, or not teams turn
     public void makeMove(ChessMove move) throws InvalidMoveException {
         ChessPiece piece = chessBoard.getPiece(move.getStartPosition());
-        ChessPosition startPosition = move.getStartPosition();
-
 
         if (piece == null || piece.getTeamColor() != teamColor) {
             throw new InvalidMoveException("No valid piece / not your turn.");
@@ -127,50 +110,8 @@ public class ChessGame {
         chessBoard.addPiece(move.getEndPosition(), movedPiece);
         chessBoard.addPiece(move.getStartPosition(), null);
 
-
-        //find if king/rook have moved so that we can castle them
-        if (piece.getPieceType() == ChessPiece.PieceType.KING) {
-            if (teamColor == TeamColor.WHITE) {
-                chessBoard.whiteKingMoved = true;
-            }
-            else chessBoard.blackKingMoved = true;
-        }
-
-        if (piece.getPieceType() == ChessPiece.PieceType.ROOK) {
-            if (startPosition.equals(new ChessPosition(1, 1))) {
-                chessBoard.whiteQueensideRookMoved = true;
-            }
-            if (startPosition.equals(new ChessPosition(1, 8))) {
-                chessBoard.whiteKingsideRookMoved = true;
-            }
-            if (startPosition.equals(new ChessPosition(8, 1))) {
-                chessBoard.blackQueensideRookMoved = true;
-            }
-            if (startPosition.equals(new ChessPosition(8, 8))) {
-                chessBoard.blackKingsideRookMoved = true;
-            }
-        }
         teamColor = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
 
-        enPassantVulnerablePawn = null;
-        if (piece.getPieceType() == ChessPiece.PieceType.PAWN) {
-            int startRow = move.getStartPosition().getRow();
-            int endRow = move.getEndPosition().getRow();
-
-            // Check for 2-square advance
-            if (Math.abs(endRow - startRow) == 2) {
-                int direction = (teamColor == TeamColor.WHITE) ? 1 : -1;
-                int enPassantRow = startRow + direction;
-                enPassantVulnerablePawn = new ChessPosition(enPassantRow, move.getStartPosition().getColumn());
-            }
-
-            // Check for en passant capture
-            if (move.getEndPosition().equals(enPassantVulnerablePawn)) {
-                int capturedPawnRow = move.getStartPosition().getRow();
-                int capturedPawnCol = move.getEndPosition().getColumn();
-                chessBoard.addPiece(new ChessPosition(capturedPawnRow, capturedPawnCol), null); // remove captured pawn
-            }
-        }
     }
 
     /**
@@ -261,88 +202,6 @@ public class ChessGame {
         return true;
     }
 
-    public boolean canCastleKingside(TeamColor teamColor) {
-        int row = (teamColor == TeamColor.WHITE) ? 1 : 8;
-        ChessPosition kingPos = new ChessPosition(row, 5);
-        ChessPosition fSquare = new ChessPosition(row, 6);
-        ChessPosition gSquare = new ChessPosition(row, 7);
-        ChessPosition rookPos = new ChessPosition(row, 8);
-
-        boolean kingMoved = (teamColor == TeamColor.WHITE) ? chessBoard.whiteKingMoved : chessBoard.blackKingMoved;
-        boolean rookMoved = (teamColor == TeamColor.WHITE) ? chessBoard.whiteKingsideRookMoved : chessBoard.blackKingsideRookMoved;
-
-        // Must not have moved
-        if (kingMoved || rookMoved) return false;
-
-        // Squares between must be empty
-        if (chessBoard.getPiece(fSquare) != null || chessBoard.getPiece(gSquare) != null) return false;
-
-        // King cannot castle out of, through, or into check
-        if (isInCheck(teamColor)) return false;
-
-        ChessPiece king = chessBoard.getPiece(kingPos);
-        chessBoard.addPiece(kingPos, null);
-
-        // simulate passing through f
-        chessBoard.addPiece(fSquare, king);
-        if (isInCheck(teamColor)) {
-            chessBoard.addPiece(fSquare, null);
-            chessBoard.addPiece(kingPos, king);
-            return false;
-        }
-
-        // simulate landing on g
-        chessBoard.addPiece(fSquare, null);
-        chessBoard.addPiece(gSquare, king);
-        boolean safe = !isInCheck(teamColor);
-        chessBoard.addPiece(gSquare, null);
-        chessBoard.addPiece(kingPos, king);
-
-        return safe;
-    }
-
-    public boolean canCastleQueenside(TeamColor teamColor) {
-        int row = (teamColor == TeamColor.WHITE) ? 1 : 8;
-        ChessPosition kingPos = new ChessPosition(row, 5);
-        ChessPosition dSquare = new ChessPosition(row, 4);
-        ChessPosition cSquare = new ChessPosition(row, 3);
-        ChessPosition bSquare = new ChessPosition(row, 2);
-        ChessPosition rookPos = new ChessPosition(row, 1);
-
-        boolean kingMoved = (teamColor == TeamColor.WHITE) ? chessBoard.whiteKingMoved : chessBoard.blackKingMoved;
-        boolean rookMoved = (teamColor == TeamColor.WHITE) ? chessBoard.whiteQueensideRookMoved : chessBoard.blackQueensideRookMoved;
-
-        if (kingMoved || rookMoved) return false;
-
-        // Squares between must be empty
-        if (chessBoard.getPiece(dSquare) != null || chessBoard.getPiece(cSquare) != null || chessBoard.getPiece(bSquare) != null) return false;
-
-        // King cannot castle out of, through, or into check
-        if (isInCheck(teamColor)) return false;
-
-        ChessPiece king = chessBoard.getPiece(kingPos);
-        chessBoard.addPiece(kingPos, null);
-
-        // simulate passing through d
-        chessBoard.addPiece(dSquare, king);
-        if (isInCheck(teamColor)) {
-            chessBoard.addPiece(dSquare, null);
-            chessBoard.addPiece(kingPos, king);
-            return false;
-        }
-
-        // simulate landing on c
-        chessBoard.addPiece(dSquare, null);
-        chessBoard.addPiece(cSquare, king);
-        boolean safe = !isInCheck(teamColor);
-        chessBoard.addPiece(cSquare, null);
-        chessBoard.addPiece(kingPos, king);
-
-        return safe;
-    }
-
-
-
 
 
 
@@ -377,7 +236,7 @@ public class ChessGame {
 
     @Override
     public String toString() {
-         return "ChessGame{" + "teamTurn=" + teamColor + ", board =" + chessBoard + '}';
+        return "ChessGame{" + "teamTurn=" + teamColor + ", board =" + chessBoard + '}';
     }
 
     @Override

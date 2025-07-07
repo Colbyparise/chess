@@ -33,20 +33,6 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
                 }
             }
         }
-
-        if (board.getEnPassantTargetPosition() != null) {
-            ChessPosition enPassantTarget = board.getEnPassantTargetPosition();
-            if (enPassantTarget != null) {
-                int direction = (team == ChessGame.TeamColor.WHITE) ? 1 : -1;
-
-                if (enPassantTarget.getRow() == row + direction &&
-                        Math.abs(enPassantTarget.getColumn() - col) == 1) {
-                    // Add en passant move
-                    moves.add(new ChessMove(position, enPassantTarget, null));
-                }
-            }
-        }
-
         return moves;
     }
 
