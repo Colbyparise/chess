@@ -6,7 +6,7 @@ public class MemoryGameDAO implements GameDAO {
     HashSet<GameData> db;
 
     public MemoryGameDAO() {
-        db = HashSet.newHashSet(16);
+        db = new HashSet<>(16);
 
     }
 
@@ -40,6 +40,17 @@ public class MemoryGameDAO implements GameDAO {
             db.add(gameData);
         }
     }
+
+    @Override
+    public boolean gameExists(int gameID) {
+        for (GameData gameData : db) {
+            if (gameData.gameID() == gameID) {
+                return true;
+            }
+        }
+        return false;
+    }
+    //remove game data
     @Override
     public void clear() {
         db = HashSet.newHashSet(16);
