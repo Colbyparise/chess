@@ -2,6 +2,7 @@ package server;
 import com.google.gson.Gson;
 
 import dataaccess.DataAccessException;
+import chess.ChessGame;
 import spark.Request;
 import model.GameData;
 import service.GameService;
@@ -26,40 +27,71 @@ public class GameHandler {
     }
 
 
-    public Object createGameHandler(Request req, Response resp) throws DataAccessException {
-        CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
+    public Object createGameHandler(Request req, Response resp) {
+        try {
+            CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
 
-        if (request == null || request.gameName() == null || request.gameName().isBlank()) {
-            throw new DataAccessException("Game name is required.");
+            if (request == null || request.gameName() == null || request.gameName().isBlank()) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: Game name is required."));
+            }
+
+            String authToken = req.headers("authorization");
+
+            if (authToken == null || authToken.isBlank()) {
+                resp.status(401);
+                return gson.toJson(new ErrorResponse("Error: Missing authorization token."));
+            }
+
+            int gameID = gameService.createGame(authToken, request.gameName());
+            resp.status(200);
+            return gson.toJson(new CreateGameResponse(gameID));
+        } catch (DataAccessException exception) {
+            resp.status(401);
+            return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
         }
-
-        String authToken = req.headers("authorization");
-        int gameID = gameService.createGame(authToken, request.gameName());
-
-        resp.status(200);
-        return gson.toJson(new CreateGameResponse(gameID));
     }
 
-    public Object joinGameHandler(Request req, Response resp) throws DataAccessException {
+    public Object joinGameHandler(Request req, Response resp) {
         String authToken = req.headers("authorization");
 
         JoinGameRequest request = gson.fromJson(req.body(), JoinGameRequest.class);
 
         if (request == null || request.gameID() <= 0) {
-            throw new DataAccessException("Valid gameID is required.");
+            resp.status(400);
+            return gson.toJson(new ErrorResponse("Error: Valid gameID is required."));
         }
 
-        boolean success = gameService.joinGame(authToken, request.gameID(), request.playerColor());
-
-        if (!success) {
-            resp.status(403);
-            return gson.toJson(new ErrorResponse("Error: Spot already taken."));
+        // Validate player color (as shown before)
+        ChessGame.TeamColor color = null;
+        if (request.playerColor() != null) {
+            try {
+                color = ChessGame.TeamColor.valueOf(request.playerColor().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: " + request.playerColor() + " is not a valid team color"));
+            }
         }
 
-        resp.status(200);
-        return "{}";
+        try {
+            boolean success = gameService.joinGame(authToken, request.gameID(), color);
+            if (!success) {
+                resp.status(403);
+                return gson.toJson(new ErrorResponse("Error: Spot already taken."));
+            }
+
+            resp.status(200);
+            return "{}";
+        } catch (DataAccessException e) {
+            // Specific message from GameService (e.g., invalid auth)
+            if (e.getMessage().contains("Auth Token does not exist")) {
+                resp.status(401);
+            } else {
+                resp.status(500);
+            }
+            return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
+        }
     }
-
 
     private record CreateGameRequest(String gameName) {}
     private record ListGamesResponse(Set<GameData> games) {}

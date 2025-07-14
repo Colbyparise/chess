@@ -42,7 +42,7 @@ public class GameService {
         return gameID;
     }
 
-    public boolean joinGame(String authToken, int gameID, String color) throws DataAccessException {
+    public boolean joinGame(String authToken, int gameID, ChessGame.TeamColor color) throws DataAccessException {
         AuthData authData = validateAuth(authToken);
         GameData gameData = getGameData(gameID);
 
@@ -89,11 +89,11 @@ public class GameService {
         }
     }
 
-    private void validateColor(String color) throws DataAccessException {
-        if (color == null || color.isBlank()) {
+    private void validateColor(ChessGame.TeamColor color) throws DataAccessException {
+        if (color == null) {
             throw new DataAccessException("Team color cannot be null or empty");
         }
-        if (!color.equals("WHITE") && !color.equals("BLACK")) {
+        if (color != ChessGame.TeamColor.WHITE && color != ChessGame.TeamColor.BLACK) {
             throw new DataAccessException(color + " is not a valid team color");
         }
     }
