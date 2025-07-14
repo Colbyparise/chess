@@ -54,7 +54,7 @@ public class UserHandler {
         String authToken = req.headers("authorization");
 
         if (authToken == null || authToken.isBlank()) {
-            throw new DataAccessException();
+            throw new DataAccessException("Missing or empty authorization token.");
         }
         userService.logoutUser(authToken);
         resp.status(200);
