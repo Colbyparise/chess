@@ -26,18 +26,29 @@ public class GameHandler {
     }
 
 
-    public Object createGameHandler(Request req, Response resp) throws DataAccessException {
-        CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
+    public Object createGameHandler(Request req, Response resp) {
+        try {
+            CreateGameRequest request = gson.fromJson(req.body(), CreateGameRequest.class);
 
-        if (request == null || request.gameName() == null || request.gameName().isBlank()) {
-            throw new DataAccessException("Game name is required.");
+            if (request == null || request.gameName() == null || request.gameName().isBlank()) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: Game name is required."));
+            }
+
+            String authToken = req.headers("authorization");
+
+            if (authToken == null || authToken.isBlank()) {
+                resp.status(401);
+                return gson.toJson(new ErrorResponse("Error: Missing authorization token."));
+            }
+
+            int gameID = gameService.createGame(authToken, request.gameName());
+            resp.status(200);
+            return gson.toJson(new CreateGameResponse(gameID));
+        } catch (DataAccessException exception) {
+            resp.status(401);
+            return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
         }
-
-        String authToken = req.headers("authorization");
-        int gameID = gameService.createGame(authToken, request.gameName());
-
-        resp.status(200);
-        return gson.toJson(new CreateGameResponse(gameID));
     }
 
     public Object joinGameHandler(Request req, Response resp) throws DataAccessException {

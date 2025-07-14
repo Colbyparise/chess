@@ -2,6 +2,7 @@ package server;
 
 import model.AuthData;
 import model.UserData;
+import dataaccess.ErrorResponse;
 import com.google.gson.Gson;
 import dataaccess.DataAccessException;
 import service.UserService;
@@ -20,11 +21,12 @@ public class UserHandler {
         this.gson = new Gson();
     }
 
-    public Object registrationHandler(Request req, Response resp) throws DataAccessException {
+    public Object registrationHandler(Request req, Response resp) {
         UserData userData = gson.fromJson(req.body(), UserData.class);
 
         if (userData == null || invalidUserData(userData)) {
-            throw new DataAccessException("Missing username or password");
+            resp.status(400);
+            return gson.toJson(new ErrorResponse("Error: Missing username or password"));
         }
 
         try {
@@ -37,29 +39,42 @@ public class UserHandler {
         }
     }
 
-    public Object loginHandler(Request req, Response resp) throws DataAccessException {
+    public Object loginHandler(Request req, Response resp) {
+        try {
+            UserData userData = gson.fromJson(req.body(), UserData.class);
 
-        UserData userData = gson.fromJson(req.body(), UserData.class);
-
-            if(userData ==null || invalidUserData(userData)) {
-                throw new DataAccessException("Missing username or password");
+            if (userData == null || invalidUserData(userData)) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Missing username or password"));
             }
 
             AuthData authData = userService.loginUser(userData);
             resp.status(200);
             return gson.toJson(authData);
-    }
 
-    public Object logoutHandler(Request req, Response resp) throws DataAccessException {
-        String authToken = req.headers("authorization");
-
-        if (authToken == null || authToken.isBlank()) {
-            throw new DataAccessException("Missing or empty authorization token.");
+        } catch (DataAccessException exception) {
+            resp.status(401);
+            return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
         }
-        userService.logoutUser(authToken);
-        resp.status(200);
-        return "{}";
     }
+
+    public Object logoutHandler(Request req, Response resp) {
+        try {
+            String authToken = req.headers("authorization");
+
+            if (authToken == null || authToken.isBlank()) {
+                resp.status(401);
+                return gson.toJson(new ErrorResponse("Error: Invalid or missing authToken."));
+            }
+            userService.logoutUser(authToken);
+            resp.status(200);
+            return "{}";
+        } catch (DataAccessException exception) {
+            resp.status(401);
+            return gson.toJson(new ErrorResponse("Error: Invalid or mission authToken."));
+        }
+    }
+
     private boolean invalidUserData(UserData userData) {
         return userData.username() == null || userData.username().isBlank()
                 || userData.password() == null || userData.password().isBlank();
