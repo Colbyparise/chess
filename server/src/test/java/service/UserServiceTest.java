@@ -1,13 +1,9 @@
-package passoff.server;
+package service;
 
 import dataaccess.*;
 import model.AuthData;
 import model.UserData;
 import org.junit.jupiter.api.*;
-import passoff.model.*;
-import service.UserService;
-
-import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -72,7 +68,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void positiveClear() throws DataAccessException {
+    void clear() throws DataAccessException {
         UserData user = new UserData("frank", "pass", "frank@example.com");
         userService.createUser(user);
         userService.clear();

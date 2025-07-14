@@ -1,6 +1,4 @@
-package passoff.server;
-
-import service.GameService;
+package service;
 
 import dataaccess.*;
 import model.AuthData;
@@ -24,7 +22,7 @@ class GameServiceTests {
         gameService = new GameService(gameDAO, authDAO);
 
         // Add a user manually for testing
-        AuthData auth = new AuthData("testuser", "valid-token");
+        AuthData auth = new AuthData("test user", "valid-token");
         authDAO.createAuth(auth);
         validToken = auth.authToken();
     }
@@ -53,7 +51,7 @@ class GameServiceTests {
     }
 
     @Test
-    void possitiveJoinGame() throws DataAccessException {
+    void positiveJoinGame() throws DataAccessException {
         int gameId = gameService.createGame(validToken, "Chess Game");
         boolean joined = gameService.joinGame(validToken, gameId, "WHITE");
 
