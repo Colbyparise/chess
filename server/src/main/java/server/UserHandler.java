@@ -45,7 +45,7 @@ public class UserHandler {
 
             if (userData == null || invalidUserData(userData)) {
                 resp.status(400);
-                return gson.toJson(new ErrorResponse("Missing username or password"));
+                return gson.toJson(new ErrorResponse("Error: Missing username or password"));
             }
 
             AuthData authData = userService.loginUser(userData);
