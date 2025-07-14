@@ -1,6 +1,5 @@
 package server;
 
-import dataaccess.AuthDAO;
 import model.AuthData;
 import model.UserData;
 import com.google.gson.Gson;
