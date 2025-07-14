@@ -3,7 +3,6 @@ package chess;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -123,29 +122,24 @@ public class ChessGame {
      */
     //returns true if the specified team's King could be captured
     public boolean isInCheck(TeamColor teamColor) {
-        ChessPosition kingPosition = findKingPosition(teamColor);
+        ChessPosition kingPosition = null;
+        //looks for the king
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <=8; col++) {
+                ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, col));
+                if (piece != null && piece.getPieceType() == ChessPiece.PieceType.KING && piece.getTeamColor() == teamColor) {
+                    kingPosition = new ChessPosition(row, col);
+                    break;
+                }
+            }
+            if (kingPosition != null) {
+                break;
+            }
+        }
         if (kingPosition == null) {
             return false;
         }
 
-        return isUnderAttack(kingPosition, teamColor);
-    }
-
-    private ChessPosition findKingPosition(TeamColor teamColor) {
-        for (int row = 1; row <= 8; row++) {
-            for (int col = 1; col <= 8; col++) {
-                ChessPiece piece = chessBoard.getPiece(new ChessPosition(row, col));
-                if (piece != null &&
-                        piece.getPieceType() == ChessPiece.PieceType.KING &&
-                        piece.getTeamColor() == teamColor) {
-                    return new ChessPosition(row, col);
-                }
-            }
-        }
-        return null;
-    }
-
-    private boolean isUnderAttack(ChessPosition kingPosition, TeamColor teamColor) {
         for (int row = 1; row <= 8; row++) {
             for (int col = 1; col <= 8; col++) {
                 ChessPosition position = new ChessPosition(row, col);
@@ -161,9 +155,9 @@ public class ChessGame {
                 }
             }
         }
+
         return false;
     }
-
 
     /**
      * Determines if the given team is in checkmate
@@ -231,15 +225,6 @@ public class ChessGame {
      */
     public ChessBoard getBoard() {
         return chessBoard;
-    }
-
-    private boolean canAttackKing(Set<ChessMove> moves, ChessPosition kingPosition) {
-        for (ChessMove move : moves) {
-            if (move.getEndPosition().equals(kingPosition)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public void setGameOver(boolean gameOver) {

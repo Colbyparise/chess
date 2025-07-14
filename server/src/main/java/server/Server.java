@@ -39,9 +39,11 @@ public class Server {
 
         // Global Exception Handling (optional but helpful)
         Spark.exception(Exception.class, (e, req, res) -> {
-            res.status(500);
+            res.status(401);
             res.body("{\"message\":\"Error: " + e.getMessage() + "\"}");
         });
+
+
 
         //This line initializes the server and can be removed once you have a functioning endpoint 
         Spark.init();
