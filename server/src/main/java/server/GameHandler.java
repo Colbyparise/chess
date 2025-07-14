@@ -16,7 +16,7 @@ public class GameHandler {
         this.gameService = gameService;
     }
 
-    public Object ListGamesHandler(Request req, Response resp, Gson gson) throws DataAccessException {
+    public Object listGamesHandler(Request req, Response resp) throws DataAccessException {
         String authToken = req.headers("authorization");
         Set<GameData> games = gameService.listGames(authToken);
 
@@ -59,6 +59,7 @@ public class GameHandler {
         resp.status(200);
         return "{}";
     }
+
 
     private record CreateGameRequest(String gameName) {}
     private record ListGamesResponse(Set<GameData> games) {}

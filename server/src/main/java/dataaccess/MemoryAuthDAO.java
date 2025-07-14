@@ -29,6 +29,7 @@ public class MemoryAuthDAO implements AuthDAO {
         return authData;
         }
 
+    //remove auth data
     @Override
     public void clear() {
     db.clear();

@@ -25,6 +25,17 @@ public class MemoryUserDAO implements UserDAO {
     }
 
     @Override
+    public boolean authenticateUser(String username, String password) throws DataAccessException {
+        for (UserData user : db) {
+            if (user.username().equals(username)) {
+                return user.password().equals(password);
+            }
+        }
+        throw new DataAccessException("User does not exist: " + username);
+    }
+
+
+    @Override
     public UserData getUser(String username) throws DataAccessException {
         for (UserData userData : db) {
             if (userData.username().equals(username)) {
@@ -33,7 +44,7 @@ public class MemoryUserDAO implements UserDAO {
         }
         throw new DataAccessException("User not found: " + username);
     }
-
+    //remove userdata
     @Override
     public void clear() {
         db = HashSet.newHashSet(16);
