@@ -2,7 +2,6 @@ package server;
 import com.google.gson.Gson;
 
 import dataaccess.DataAccessException;
-import chess.ChessGame;
 import spark.Request;
 import model.GameData;
 import service.GameService;
@@ -52,29 +51,24 @@ public class GameHandler {
         }
     }
 
-    public Object joinGameHandler(Request req, Response resp) {
-        String authToken = req.headers("authorization");
-
-        JoinGameRequest request = gson.fromJson(req.body(), JoinGameRequest.class);
-
-        if (request == null || request.gameID() <= 0) {
-            resp.status(400);
-            return gson.toJson(new ErrorResponse("Error: Valid gameID is required."));
-        }
-
-        // Validate player color (as shown before)
-        ChessGame.TeamColor color = null;
-        if (request.playerColor() != null) {
-            try {
-                color = ChessGame.TeamColor.valueOf(request.playerColor().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                resp.status(400);
-                return gson.toJson(new ErrorResponse("Error: " + request.playerColor() + " is not a valid team color"));
-            }
-        }
-
+    public Object joinGameHandler(Request req, Response resp) throws DataAccessException {
         try {
-            boolean success = gameService.joinGame(authToken, request.gameID(), color);
+            String authToken = req.headers("authorization");
+
+            JoinGameRequest request = gson.fromJson(req.body(), JoinGameRequest.class);
+
+            if (request == null || request.gameID() <= 0) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: Valid gameID is required."));
+            }
+
+            if (request.playerColor() == null || request.playerColor().isBlank()) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: Team color cannot be null or empty"));
+            }
+
+            boolean success = gameService.joinGame(authToken, request.gameID(), request.playerColor());
+
             if (!success) {
                 resp.status(403);
                 return gson.toJson(new ErrorResponse("Error: Spot already taken."));
@@ -82,16 +76,20 @@ public class GameHandler {
 
             resp.status(200);
             return "{}";
-        } catch (DataAccessException e) {
-            // Specific message from GameService (e.g., invalid auth)
-            if (e.getMessage().contains("Auth Token does not exist")) {
+
+        } catch (DataAccessException exception) {
+            if (exception.getMessage().contains("not a valid team color")) {
+                resp.status(400);
+            } else if (exception.getMessage().contains("Auth Token does not exist")) {
                 resp.status(401);
             } else {
                 resp.status(500);
             }
-            return gson.toJson(new ErrorResponse("Error: " + e.getMessage()));
+
+            return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
         }
     }
+
 
     private record CreateGameRequest(String gameName) {}
     private record ListGamesResponse(Set<GameData> games) {}
