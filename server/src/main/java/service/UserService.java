@@ -3,6 +3,7 @@ package service;
 
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
+import dataaccess.UnauthorizedException;
 import dataaccess.UserDAO;
 import model.UserData;
 import model.AuthData;
@@ -30,7 +31,7 @@ public class UserService {
 
         return authData;
     }
-    public AuthData loginUser(UserData userData) throws DataAccessException {
+    public AuthData loginUser(UserData userData) throws DataAccessException, UnauthorizedException {
         boolean isAuthenticated;
         try {
             isAuthenticated = userDAO.authenticateUser(userData.username(), userData.password());
@@ -39,7 +40,7 @@ public class UserService {
         }
 
         if (!isAuthenticated) {
-            throw new DataAccessException("Invalid username or password");
+            throw new UnauthorizedException("Invalid username or password");
         }
 
         String authToken = UUID.randomUUID().toString();
@@ -49,14 +50,21 @@ public class UserService {
         return authData;
     }
 
-    public void logoutUser(String authToken) throws DataAccessException {
+    public void logoutUser(String authToken) throws DataAccessException, UnauthorizedException{
+        AuthData auth;
         try {
-            authDAO.getAuth(authToken);
-        } catch (DataAccessException exception) {
-            throw new DataAccessException("Invalid or missing auth token.");
+            auth = authDAO.getAuth(authToken);
+        } catch (DataAccessException e) {
+            throw e;
         }
+
+        if (auth == null) {
+            throw new UnauthorizedException("Invalid or missing auth token.");
+        }
+
         authDAO.deleteAuth(authToken);
     }
+
 
     public void clear() {
         userDAO.clear();

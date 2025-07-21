@@ -46,7 +46,7 @@ public class GameHandler {
             resp.status(200);
             return gson.toJson(new CreateGameResponse(gameID));
         } catch (DataAccessException exception) {
-            resp.status(401);
+            resp.status(500);
             return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
         }
     }

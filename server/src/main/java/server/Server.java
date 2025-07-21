@@ -13,9 +13,9 @@ public class Server {
         Spark.staticFiles.location("web");
 
         // DAOs
-        UserDAO userDAO = new MemoryUserDAO();
-        AuthDAO authDAO = new MemoryAuthDAO();
-        GameDAO gameDAO = new MemoryGameDAO();
+        UserDAO userDAO = new SQLUserDAO();
+        AuthDAO authDAO = new SQLAuthDAO();
+        GameDAO gameDAO = new SQLGameDAO();
 
         // services
         UserService userService = new UserService(userDAO ,authDAO);
@@ -38,11 +38,21 @@ public class Server {
         Spark.put("/game", gameHandler::joinGameHandler);
 
         // Global Exception Handling (optional but helpful)
+//        Spark.exception(Exception.class, (e, req, res) -> {
+//            res.status(401);
+//            res.body("{\"message\":\"Error: " + e.getMessage() + "\"}");
+//        });
+
         Spark.exception(Exception.class, (e, req, res) -> {
-            res.status(401);
+            if (e instanceof UnauthorizedException) {
+                res.status(401);
+            } else if (e instanceof DataAccessException) {
+                res.status(500);
+            } else {
+                res.status(500);
+            }
             res.body("{\"message\":\"Error: " + e.getMessage() + "\"}");
         });
-
 
 
         //This line initializes the server and can be removed once you have a functioning endpoint 

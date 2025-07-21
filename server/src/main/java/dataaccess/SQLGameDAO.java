@@ -22,7 +22,7 @@ public class SQLGameDAO implements GameDAO {
                     "blackUsername VARCHAR(255), " +
                     "gameName VARCHAR(255), " +
                     "chessGame TEXT, " +
-                    "PRIMARY KEY (gameID)";
+                    "PRIMARY KEY (gameID))";
 
             try (var statement = connection.prepareStatement(createTableSQL)) {
                 statement.executeUpdate();
@@ -57,7 +57,7 @@ public class SQLGameDAO implements GameDAO {
     }
 
     @Override
-    public void createGame(GameData game) {
+    public void createGame(GameData game) throws DataAccessException {
         try (var conn = DatabaseManager.getConnection()) {
             try (var statement = conn.prepareStatement("INSERT INTO game (gameID, whiteUsername, blackUsername, gameName, chessGame) VALUES(?, ?, ?, ?, ?)")) {
                 statement.setInt(1, game.gameID());
@@ -67,7 +67,8 @@ public class SQLGameDAO implements GameDAO {
                 statement.setString(5, serializeGame(game.game()));
                 statement.executeUpdate();
             }
-        } catch (SQLException | DataAccessException e) {
+        } catch (SQLException | DataAccessException exception) {
+            throw new DataAccessException("Error creating game ", exception);
         }
     }
 
@@ -111,7 +112,7 @@ public class SQLGameDAO implements GameDAO {
     }
 
     @Override
-    public void updateGame(GameData game) {
+    public void updateGame(GameData game) throws DataAccessException {
         String updateSQL = "UPDATE game SET whiteUsername=?, blackUsername=?, gameName=?, chessGame=? WHERE gameID=?";
         try (var conn = DatabaseManager.getConnection();
              var stmt = conn.prepareStatement(updateSQL)) {
@@ -122,7 +123,8 @@ public class SQLGameDAO implements GameDAO {
             stmt.setString(4, serializeGame(game.game()));
             stmt.setInt(5, game.gameID());
             stmt.executeUpdate();
-        } catch (SQLException | DataAccessException e) {
+        } catch (SQLException | DataAccessException exception) {
+            throw new DataAccessException("Error updating game ", exception);
         }
     }
 

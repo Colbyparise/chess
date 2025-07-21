@@ -70,7 +70,7 @@ public class UserHandler {
             resp.status(200);
             return "{}";
         } catch (DataAccessException exception) {
-            resp.status(401);
+            resp.status(500);
             return gson.toJson(new ErrorResponse("Error: Invalid or mission authToken."));
         }
     }

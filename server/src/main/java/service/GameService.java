@@ -1,6 +1,7 @@
 package service;
 import chess.ChessGame;
 import dataaccess.AuthDAO;
+import dataaccess.UnauthorizedException;
 import model.AuthData;
 import dataaccess.DataAccessException;
 import dataaccess.GameDAO;
@@ -73,12 +74,21 @@ public class GameService {
         gameDAO.clear();
     }
 
-    private AuthData validateAuth(String authToken) throws DataAccessException {
+    private AuthData validateAuth(String authToken) throws UnauthorizedException, DataAccessException {
+        AuthData auth;
         try {
-            return authDAO.getAuth(authToken);
+            auth = authDAO.getAuth(authToken);
         } catch (DataAccessException e) {
-            throw new DataAccessException(e.getMessage());
+            // Real DB error → must be treated as 500
+            throw e;
         }
+
+        if (auth == null) {
+            // Token wasn't found, but DB was reachable → 401
+            throw new UnauthorizedException("Invalid auth token");
+        }
+
+        return auth;
     }
 
     private GameData getGameData(int gameID) throws DataAccessException {
