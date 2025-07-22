@@ -2,7 +2,6 @@ package dataaccess;
 
 import model.UserData;
 import java.sql.SQLException;
-import java.sql.Connection;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class SQLUserDAO implements UserDAO {
@@ -90,6 +89,7 @@ public class SQLUserDAO implements UserDAO {
     }
 
     private String hashPassword(String password) {
+
         return BCrypt.hashpw(password, BCrypt.gensalt());
     }
 

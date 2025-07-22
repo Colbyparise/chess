@@ -34,8 +34,15 @@ public class UserHandler {
             resp.status(200);
             return gson.toJson(authData);
         } catch (DataAccessException exception) {
-            resp.status(403);
-            return errorResponse();
+            if (exception.getMessage().toLowerCase().contains("already taken")
+                    || exception.getMessage().toLowerCase().contains("error creating user")
+                    || exception.getMessage().toLowerCase().contains("existinguser")) {
+                resp.status(403);
+                return gson.toJson(new ErrorResponse("Error: already taken"));
+            } else {
+                resp.status(500);
+                return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
+            }
         }
     }
 
@@ -53,8 +60,14 @@ public class UserHandler {
             return gson.toJson(authData);
 
         } catch (DataAccessException exception) {
-            resp.status(401);
-            return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
+            if (exception.getMessage().toLowerCase().contains("invalid")
+                    || exception.getMessage().toLowerCase().contains("user not found")) {
+                resp.status(401);
+                return gson.toJson(new ErrorResponse("Error: unauthorized"));
+            } else {
+                resp.status(500);
+                return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
+            }
         }
     }
 

@@ -1,9 +1,11 @@
 package server;
 import com.google.gson.Gson;
+import dataaccess.ErrorResponse;
 import service.UserService;
 import service.GameService;
 import spark.Response;
 import spark.Request;
+
 
 public class ClearHandler {
     private final UserService userService;
@@ -16,10 +18,14 @@ public class ClearHandler {
     }
 
     public Object handleClear(Request req, Response res) {
-            userService.clear();
-            gameService.clear();
+        try {
+            userService.clear(); // Clears users and authTokens
+            gameService.clear(); // Clears games
             res.status(200);
             return "{}";
-
+        } catch (Exception e) {
+            res.status(500);
+            return new Gson().toJson(new ErrorResponse("Error: " + e.getMessage()));
         }
+    }
 }
