@@ -122,7 +122,12 @@ public class SQLGameDAO implements GameDAO {
             stmt.setString(3, game.gameName());
             stmt.setString(4, serializeGame(game.game()));
             stmt.setInt(5, game.gameID());
-            stmt.executeUpdate();
+
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new DataAccessException("No game found with gameID: " + game.gameID());
+            }
+
         } catch (SQLException | DataAccessException exception) {
             throw new DataAccessException("Error updating game ", exception);
         }
