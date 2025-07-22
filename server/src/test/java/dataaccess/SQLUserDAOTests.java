@@ -39,6 +39,16 @@ public class SQLUserDAOTests {
     }
 
     @Test
+    void getUserPositive() throws DataAccessException {
+        UserData user = new UserData("jane", "pass", "jane@example.com");
+        dao.createUser(user);
+
+        UserData result = dao.getUser("jane");
+        assertEquals("jane", result.username());
+        assertEquals("jane@example.com", result.email());
+    }
+
+    @Test
     void getUserNonExistentThrows() {
         DataAccessException ex = assertThrows(DataAccessException.class, () ->
                 dao.getUser("ghost")
@@ -74,5 +84,10 @@ public class SQLUserDAOTests {
         assertThrows(DataAccessException.class, () ->
                 dao.getUser("eve")
         );
+    }
+
+    @Test
+    void clearDoesNotThrowOnEmpty() {
+        assertDoesNotThrow(() -> dao.clear());
     }
 }
