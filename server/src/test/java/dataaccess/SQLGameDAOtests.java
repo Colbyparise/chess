@@ -27,7 +27,7 @@ class SQLGameDAOtests {
     }
 
     @Test
-    void createGameNegative_DuplicateID() throws DataAccessException {
+    void createGameNegative() throws DataAccessException {
         GameData game1 = new GameData(1, null, null, "Game A", new ChessGame());
         GameData game2 = new GameData(1, "white", "black", "Game B", new ChessGame());
         dao.createGame(game1);
@@ -45,7 +45,7 @@ class SQLGameDAOtests {
     }
 
     @Test
-    void getGameNegative_NotFound() {
+    void getGameNegative() {
         assertThrows(DataAccessException.class, () -> dao.getGame(9999));
     }
 
@@ -63,7 +63,7 @@ class SQLGameDAOtests {
     }
 
     @Test
-    void updateGameNegative_NonExistent() {
+    void updateGameNegative() {
         GameData game = new GameData(999, "w", "b", "Fake", new ChessGame());
         assertThrows(DataAccessException.class, () -> dao.updateGame(game));
     }
@@ -89,7 +89,7 @@ class SQLGameDAOtests {
     }
 
     @Test
-    void listGamesNegative_Empty() {
+    void listGamesNegative() {
         dao.clear();
         assertTrue(dao.listGames().isEmpty());
     }

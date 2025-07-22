@@ -92,8 +92,4 @@ public class UserHandler {
         return userData.username() == null || userData.username().isBlank()
                 || userData.password() == null || userData.password().isBlank();
     }
-
-    private String errorResponse() {
-        return "{ \"message\": \"Error: " + "Username already taken" + "\" }";
-    }
 }

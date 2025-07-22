@@ -37,12 +37,6 @@ public class Server {
         Spark.post("/game", gameHandler::createGameHandler);
         Spark.put("/game", gameHandler::joinGameHandler);
 
-        // Global Exception Handling (optional but helpful)
-//        Spark.exception(Exception.class, (e, req, res) -> {
-//            res.status(401);
-//            res.body("{\"message\":\"Error: " + e.getMessage() + "\"}");
-//        });
-
         Spark.exception(Exception.class, (e, req, res) -> {
             if (e instanceof UnauthorizedException) {
                 res.status(401);

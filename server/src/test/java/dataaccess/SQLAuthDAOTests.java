@@ -25,7 +25,7 @@ class SQLAuthDAOTests {
     }
 
     @Test
-    void createAuthNegative_duplicateToken() throws DataAccessException {
+    void createAuthNegative() throws DataAccessException {
         authDAO.createAuth(testAuth);
         AuthData duplicate = new AuthData("anotherUser", "testToken"); // same token
         assertThrows(DataAccessException.class, () -> authDAO.createAuth(duplicate));
@@ -40,7 +40,7 @@ class SQLAuthDAOTests {
     }
 
     @Test
-    void getAuthNegative_nonExistentToken() throws DataAccessException {
+    void getAuthNegative() throws DataAccessException {
         AuthData result = authDAO.getAuth("nonexistent");
         assertNull(result);  // not found should return null
     }
@@ -53,7 +53,7 @@ class SQLAuthDAOTests {
     }
 
     @Test
-    void deleteAuthNegative_nonExistentToken() {
+    void deleteAuthNegative() {
         assertDoesNotThrow(() -> authDAO.deleteAuth("nope"));
     }
 
