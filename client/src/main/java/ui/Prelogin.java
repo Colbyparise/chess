@@ -5,11 +5,11 @@ import model.AuthData;
 import model.UserData;
 import java.util.Scanner;
 
-public class PreLogin {
+public class Prelogin {
     private final Scanner scanner;
     private final ServerFacade serverFacade;
 
-    public PreLogin(Scanner scanner, ServerFacade serverFacade) {
+    public Prelogin(Scanner scanner, ServerFacade serverFacade) {
         this.scanner = scanner;
         this.serverFacade = serverFacade;
     }
