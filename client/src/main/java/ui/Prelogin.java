@@ -7,11 +7,11 @@ import java.util.Scanner;
 
 public class Prelogin {
     private final Scanner scanner;
-    private final ServerFacade serverFacade;
+    private final ServerFacade server;
 
-    public Prelogin(Scanner scanner, ServerFacade serverFacade) {
+    public Prelogin(Scanner scanner, ServerFacade server) {
         this.scanner = scanner;
-        this.serverFacade = serverFacade;
+        this.server = server;
     }
 
     public AuthData run() {
@@ -67,7 +67,7 @@ public class Prelogin {
 
     private AuthData handleLogin(String username, String password) throws Exception {
         AuthData authData = server.login(username, password);
-        System.out.println("Login successful, Welcome, " + authdata.username());
+        System.out.println("Login successful, Welcome, " + authData.username());
         return authData;
     }
 

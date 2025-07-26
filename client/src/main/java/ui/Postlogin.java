@@ -1,25 +1,26 @@
 package ui;
 
+import chess.ChessGame;
 import client.ServerFacade;
 import model.AuthData;
 import model.GameData;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.*;
 
 public class Postlogin {
     private final Scanner scanner;
     private final ServerFacade server;
     private final String authToken;
-    private final AuthData auth;
     private final Map<Integer, GameData> gameNumberMap = new HashMap<>();
 
     public Postlogin(Scanner scanner, ServerFacade server, String authToken) {
         this.scanner = scanner;
         this.server = server;
         this.authToken = authToken;
-        this.auth = new AuthData("user", authToken); // Optionally update with real username if you have it
     }
 
     public void run() {
@@ -28,9 +29,8 @@ public class Postlogin {
         while (true) {
             System.out.print("[LOGGED_IN] >>> ");
             String input = scanner.nextLine().trim();
+            if (input.isEmpty()) continue;
             String[] parts = input.split("\\s+");
-            if (parts.length == 0) continue;
-
             String command = parts[0].toLowerCase();
 
             try {
@@ -79,22 +79,23 @@ public class Postlogin {
     }
 
     private void handleList() throws Exception {
-        List<GameData> games = server.listGames(authToken);
+        List<GameData> games = new ArrayList<>(server.listGames(authToken));
         if (games.isEmpty()) {
             System.out.println("No games available.");
             return;
         }
 
         gameNumberMap.clear();
-        int number = 1;
-        for (GameData game : games) {
-            gameNumberMap.put(number, game);
-            String white = game.whiteUsername() != null ? game.whiteUsername() : "(empty)";
-            String black = game.blackUsername() != null ? game.blackUsername() : "(empty)";
-            System.out.printf("%d. %s | White: %s | Black: %s%n", number, game.gameName(), white, black);
-            number++;
+        System.out.println("Available Games:");
+        for (int i = 0; i < games.size(); i++) {
+            GameData game = games.get(i);
+            gameNumberMap.put(i + 1, game);
+            String white = game.whiteUsername() != null ? game.whiteUsername() : "(open)";
+            String black = game.blackUsername() != null ? game.blackUsername() : "(open)";
+            System.out.printf("%d. %s | White: %s | Black: %s%n", i + 1, game.gameName(), white, black);
         }
     }
+
 
     private void handleJoin(String[] parts) throws Exception {
         if (parts.length != 3) {
@@ -116,9 +117,9 @@ public class Postlogin {
             return;
         }
 
-        TeamColor color;
+        ChessGame.TeamColor color;
         try {
-            color = TeamColor.valueOf(parts[2].toUpperCase());
+            color = ChessGame.TeamColor.valueOf(parts[2].toUpperCase());
         } catch (IllegalArgumentException e) {
             System.out.println("Invalid color. Choose WHITE or BLACK.");
             return;
@@ -152,7 +153,6 @@ public class Postlogin {
 
         server.observeGame(game.gameID(), authToken);
         System.out.println("Observing game '" + game.gameName() + "'.");
-        // Transition to observer mode (stub)
         System.out.println("Drawing board... (observer mode coming soon)");
     }
     }
