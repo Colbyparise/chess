@@ -16,6 +16,7 @@ import java.util.*;
 public class ServerFacade {
     private final String baseURL;
 
+
     public ServerFacade(int port) {
         this.baseURL = "http://localhost:" + port;
     }
@@ -89,6 +90,13 @@ public class ServerFacade {
             throw new Exception((String) response.get("Error"));
         }
     }
+    public void clearDB() throws Exception {
+        Map<String, Object> response = request("DELETE", "/db", null, null);
+        if (response.containsKey("Error")) {
+            throw new Exception((String) response.get("Error"));
+        }
+    }
+
 
     private Map<String, Object> request(String method, String path, String bodyJson, String authToken) {
         try {
