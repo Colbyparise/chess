@@ -79,7 +79,11 @@ public class ServerFacade {
         }
         String jsonBody = new Gson().toJson(body);
         Map<String, Object> response = request("PUT", "/game", jsonBody, authToken);
-        return !response.containsKey("Error");
+        if (response.containsKey("Error")) {
+            throw new Exception((String) response.get("Error"));
+        }
+
+        return true;
     }
 
     public void observeGame(int gameID, String authToken) throws Exception {
