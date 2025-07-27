@@ -51,7 +51,7 @@ public class GameHandler {
         }
     }
 
-    public Object joinGameHandler(Request req, Response resp) throws DataAccessException {
+    public Object joinGameHandler(Request req, Response resp) {
         try {
             String authToken = req.headers("authorization");
 
@@ -63,10 +63,13 @@ public class GameHandler {
             }
 
             if (request.playerColor() == null || request.playerColor().isBlank()) {
-                resp.status(400);
-                return gson.toJson(new ErrorResponse("Error: Team color cannot be null or empty"));
+                // Treat as OBSERVE
+                gameService.observeGame(authToken, request.gameID());
+                resp.status(200);
+                return "{}";
             }
 
+            // Treat as JOIN
             boolean success = gameService.joinGame(authToken, request.gameID(), request.playerColor());
 
             if (!success) {
