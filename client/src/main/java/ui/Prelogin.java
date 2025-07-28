@@ -5,6 +5,7 @@ import model.AuthData;
 import model.UserData;
 import java.util.Scanner;
 
+
 public class Prelogin {
     private final Scanner scanner;
     private final ServerFacade server;
@@ -25,39 +26,50 @@ public class Prelogin {
             if (parts.length == 0) continue;
 
             String command = parts[0].toLowerCase();
-
             try {
-                switch (command) {
-                    case "help" -> printHelp();
-                    case "quit" -> {
-                        System.out.println("Goodbye!");
-                        return null;
-                    }
-                    case "login" -> {
-                        if (parts.length != 3) {
-                            System.out.println("Usage: login <USERNAME> <PASSWORD>");
-                        } else {
-                            return handleLogin(parts[1], parts[2]);
-                        }
-                    }
-                    case "register" -> {
-                        if (parts.length != 4) {
-                            System.out.println("Usage: register <USERNAME> <PASSWORD> <EMAIL>");
-                        } else {
-                            return handleRegister(parts[1], parts[2], parts[3]);
-                        }
-                    }
-                    default -> System.out.println("Unknown command, type 'help for a list of commands.");
-                }
-            } catch (Exception exception) {
-                System.out.println("Error: " + exception.getMessage());
+                return handleCommand(command, parts);
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }
 
+    private AuthData handleCommand(String command, String[] parts) throws Exception {
+        switch (command) {
+            case "help" -> printHelp();
+            case "quit" -> {
+                System.out.println("Goodbye!");
+                return null;
+            }
+            case "login" -> {
+                return attemptLogin(parts);
+            }
+            case "register" -> {
+                return attemptRegister(parts);
+            }
+            default -> System.out.println("Unknown command, type 'help' for a list of commands.");
+        }
+        return null;
+    }
+
+    private AuthData attemptLogin(String[] parts) throws Exception {
+        if (parts.length != 3) {
+            System.out.println("Usage: login <USERNAME> <PASSWORD>");
+            return null;
+        }
+        return handleLogin(parts[1], parts[2]);
+    }
+
+    private AuthData attemptRegister(String[] parts) throws Exception {
+        if (parts.length != 4) {
+            System.out.println("Usage: register <USERNAME> <PASSWORD> <EMAIL>");
+            return null;
+        }
+        return handleRegister(parts[1], parts[2], parts[3]);
+    }
+
     private void printHelp() {
         System.out.println("""
-                
                 register <USERNAME> <PASSWORD> <EMAIL>
                 login <USERNAME> <PASSWORD>
                 quit
@@ -70,7 +82,6 @@ public class Prelogin {
         System.out.println("Login successful, Welcome, " + authData.username());
         return authData;
     }
-
 
     private AuthData handleRegister(String username, String password, String email) throws Exception {
         UserData user = new UserData(username, password, email);

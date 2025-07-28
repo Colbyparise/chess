@@ -46,10 +46,13 @@ public class GameService {
     public void observeGame(String authToken, int gameID) throws DataAccessException {
         // Validate auth token
         AuthData auth = authDAO.getAuth(authToken);
-        if (auth == null) throw new DataAccessException("Auth Token does not exist");
-
+        if (auth == null) {
+            throw new DataAccessException("Auth Token does not exist");
+        }
         GameData game = gameDAO.getGame(gameID);
-        if (game == null) throw new DataAccessException("Game not found");
+        if (game == null) {
+            throw new DataAccessException("Game not found");
+        }
     }
 
         public boolean joinGame(String authToken, int gameID, String color) throws DataAccessException {

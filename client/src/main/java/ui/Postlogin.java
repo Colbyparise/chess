@@ -30,30 +30,16 @@ public class Postlogin {
             System.out.print("[LOGGED_IN] >>> ");
             String input = scanner.nextLine().trim();
             if (input.isEmpty()) continue;
+
             String[] parts = input.split("\\s+");
             String command = parts[0].toLowerCase();
 
             try {
                 switch (command) {
                     case "help" -> printHelp();
-                    case "logout" -> {
-                        server.logout(authToken);
-                        System.out.println("You have been logged out.");
-                        return;
-                    }
-                    case "quit" -> {
-                        System.out.println("Goodbye!");
-                        System.exit(0);
-                    }
-                    case "create" -> {
-                        if (parts.length < 2) {
-                            System.out.println("Usage: create <NAME>");
-                        } else {
-                            String gameName = String.join(" ", Arrays.copyOfRange(parts, 1, parts.length));
-                            server.createGame(gameName, authToken);
-                            System.out.println("Game '" + gameName + "' created.");
-                        }
-                    }
+                    case "logout" -> handleLogout();
+                    case "quit" -> handleQuit();
+                    case "create" -> handleCreate(parts);
                     case "list" -> handleList();
                     case "join" -> handleJoin(parts);
                     case "observe" -> handleObserve(parts);
@@ -65,17 +51,38 @@ public class Postlogin {
         }
     }
 
+    private void handleLogout() throws Exception {
+        server.logout(authToken);
+        System.out.println("You have been logged out.");
+        System.exit(0);
+    }
+
+    private void handleQuit() {
+        System.out.println("Goodbye!");
+        System.exit(0);
+    }
+
+    private void handleCreate(String[] parts) throws Exception {
+        if (parts.length < 2) {
+            System.out.println("Usage: create <NAME>");
+            return;
+        }
+        String gameName = String.join(" ", Arrays.copyOfRange(parts, 1, parts.length));
+        server.createGame(gameName, authToken);
+        System.out.println("Game '" + gameName + "' created.");
+    }
+
     private void printHelp() {
         System.out.println("""
-                    === Postlogin Commands ===
-                    create <NAME>             - a game
-                    list                      - games
-                    join <ID> [WHITE|BLACK]   - join a game
-                    observe <ID>              - observe a game
-                    logout                    - when you are done
-                    quit                      - exit the program
-                    help                      - with possible commands
-                    """);
+                === Postlogin Commands ===
+                create <NAME>             - a game
+                list                      - games
+                join <ID> [WHITE|BLACK]   - join a game
+                observe <ID>              - observe a game
+                logout                    - when you are done
+                quit                      - exit the program
+                help                      - with possible commands
+                """);
     }
 
     private void handleList() throws Exception {
@@ -96,38 +103,23 @@ public class Postlogin {
         }
     }
 
-
     private void handleJoin(String[] parts) throws Exception {
         if (parts.length != 3) {
             System.out.println("Usage: join <ID> [WHITE|BLACK]");
             return;
         }
 
-        int gameNumber;
-        try {
-            gameNumber = Integer.parseInt(parts[1]);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid game number.");
-            return;
-        }
+        int gameNumber = parseGameNumber(parts[1]);
+        if (gameNumber == -1) return;
 
-        GameData game = gameNumberMap.get(gameNumber);
-        if (game == null) {
-            System.out.println("Game number not found. Use 'list' to see available games.");
-            return;
-        }
+        GameData game = getGameFromNumber(gameNumber);
+        if (game == null) return;
 
-        ChessGame.TeamColor color;
-        try {
-            color = ChessGame.TeamColor.valueOf(parts[2].toUpperCase());
-        } catch (IllegalArgumentException e) {
-            System.out.println("Invalid color. Choose WHITE or BLACK.");
-            return;
-        }
+        ChessGame.TeamColor color = parseColor(parts[2]);
+        if (color == null) return;
 
         server.joinGame(game.gameID(), color, authToken);
         System.out.println("Joined game '" + game.gameName() + "' as " + color + ".");
-        // Transition to gameplay UI stub
         System.out.println("Drawing board... (gameplay coming soon)");
     }
 
@@ -137,22 +129,40 @@ public class Postlogin {
             return;
         }
 
-        int gameNumber;
-        try {
-            gameNumber = Integer.parseInt(parts[1]);
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid game number.");
-            return;
-        }
+        int gameNumber = parseGameNumber(parts[1]);
+        if (gameNumber == -1) return;
 
-        GameData game = gameNumberMap.get(gameNumber);
-        if (game == null) {
-            System.out.println("Game number not found. Use 'list' to see available games.");
-            return;
-        }
+        GameData game = getGameFromNumber(gameNumber);
+        if (game == null) return;
 
         server.observeGame(game.gameID(), authToken);
         System.out.println("Observing game '" + game.gameName() + "'.");
         System.out.println("Drawing board... (observer mode coming soon)");
     }
+
+    private int parseGameNumber(String input) {
+        try {
+            return Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid game number.");
+            return -1;
+        }
     }
+
+    private GameData getGameFromNumber(int number) {
+        GameData game = gameNumberMap.get(number);
+        if (game == null) {
+            System.out.println("Game number not found. Use 'list' to see available games.");
+        }
+        return game;
+    }
+
+    private ChessGame.TeamColor parseColor(String input) {
+        try {
+            return ChessGame.TeamColor.valueOf(input.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid color. Choose WHITE or BLACK.");
+            return null;
+        }
+    }
+}
