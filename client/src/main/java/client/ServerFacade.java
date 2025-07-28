@@ -89,7 +89,7 @@ public class ServerFacade {
     public void observeGame(int gameID, String authToken) throws Exception {
         Map<String, Object> body = Map.of("gameID", gameID);
         String jsonBody = new Gson().toJson(body);
-        Map<String, Object> response = request("PUT", "/game", jsonBody, authToken);
+        Map<String, Object> response = request("PUT", "/game/observe", jsonBody, authToken);
         if (response.containsKey("Error")) {
             throw new Exception((String) response.get("Error"));
         }

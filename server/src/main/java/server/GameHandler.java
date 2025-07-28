@@ -51,7 +51,7 @@ public class GameHandler {
         }
     }
 
-    public Object joinGameHandler(Request req, Response resp) {
+    public Object joinGameHandler(Request req, Response resp) throws DataAccessException {
         try {
             String authToken = req.headers("authorization");
 
@@ -63,13 +63,10 @@ public class GameHandler {
             }
 
             if (request.playerColor() == null || request.playerColor().isBlank()) {
-                // Treat as OBSERVE
-                gameService.observeGame(authToken, request.gameID());
-                resp.status(200);
-                return "{}";
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: Team color cannot be null or empty"));
             }
 
-            // Treat as JOIN
             boolean success = gameService.joinGame(authToken, request.gameID(), request.playerColor());
 
             if (!success) {
@@ -92,8 +89,31 @@ public class GameHandler {
             return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
         }
     }
+    public Object observeGameHandler(Request req, Response resp) {
+        try {
+            String authToken = req.headers("authorization");
+            ObserveGameRequest request = gson.fromJson(req.body(), ObserveGameRequest.class);
 
+            if (request == null || request.gameID <= 0) {
+                resp.status(400);
+                return gson.toJson(new ErrorResponse("Error: Valid gameID is required."));
+            }
 
+            gameService.observeGame(authToken, request.gameID);
+
+            resp.status(200);
+            return "{}";
+        } catch (DataAccessException exception) {
+            if (exception.getMessage().contains("Auth Token does not exist")) {
+                resp.status(401);
+            } else {
+                resp.status(500);
+            }
+            return gson.toJson(new ErrorResponse("Error: " + exception.getMessage()));
+        }
+    }
+
+    private record ObserveGameRequest(int gameID) {}
     private record CreateGameRequest(String gameName) {}
     private record ListGamesResponse(Set<GameData> games) {}
     private record CreateGameResponse(int gameID) {}

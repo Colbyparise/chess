@@ -36,6 +36,7 @@ public class Server {
         Spark.get("/game", gameHandler::listGamesHandler);
         Spark.post("/game", gameHandler::createGameHandler);
         Spark.put("/game", gameHandler::joinGameHandler);
+        Spark.put("/game/observe", gameHandler::observeGameHandler);
 
         Spark.exception(Exception.class, (e, req, res) -> {
             if (e instanceof UnauthorizedException) {
