@@ -125,4 +125,17 @@ public class ServerFacadeTests {
     void observeGameNegative() {
         assertThrows(Exception.class, () -> facade.observeGame(-999, auth.authToken()));
     }
+    @Test
+    void clearDBPositive() {
+        assertDoesNotThrow(() -> facade.clearDB());
+    }
+
+    @Test
+    void clearDBRepeatable() {
+        assertDoesNotThrow(() -> {
+            facade.clearDB();
+            facade.clearDB(); // test idempotency
+        });
+    }
+
 }
