@@ -110,6 +110,14 @@ public class GameService {
             throw new DataAccessException(e.getMessage());
         }
     }
+    public ChessGame getGame(String authToken, int gameID) throws DataAccessException {
+        validateAuth(authToken); // Ensure the request is authorized
+        GameData gameData = getGameData(gameID); // Retrieve game info
+        if (gameData == null) {
+            throw new DataAccessException("Game not found");
+        }
+        return gameData.game(); // Return the ChessGame object
+    }
 
     private void validateColor(String color) throws DataAccessException {
         if (color == null || color.isBlank()) {

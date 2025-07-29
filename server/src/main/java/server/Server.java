@@ -1,5 +1,7 @@
 package server;
 
+import chess.ChessGame;
+import com.google.gson.Gson;
 import dataaccess.*;
 import service.GameService;
 import service.UserService;
@@ -47,6 +49,14 @@ public class Server {
                 res.status(500);
             }
             res.body("{\"message\":\"Error: " + e.getMessage() + "\"}");
+        });
+
+        Spark.get("/game/:id", (req, res) -> {
+            String authToken = req.headers("Authorization");
+            int gameID = Integer.parseInt(req.params("id"));
+
+            ChessGame game = gameService.getGame(authToken, gameID); // This should validate auth and load game
+            return new Gson().toJson(game.getBoard());
         });
 
 

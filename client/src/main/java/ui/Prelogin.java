@@ -21,15 +21,16 @@ public class Prelogin {
         while (true) {
             System.out.print("[LOGGED_OUT] >>> ");
             String input = scanner.nextLine().trim();
+            if (input.isEmpty()) continue;
+
             String[] parts = input.split("\\s+");
-
-            if (parts.length == 0) {
-                continue;
-            }
-
             String command = parts[0].toLowerCase();
+
             try {
-                return handleCommand(command, parts);
+                AuthData auth = handleCommand(command, parts);
+                if (auth != null) {
+                    return auth;
+                }
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
             }

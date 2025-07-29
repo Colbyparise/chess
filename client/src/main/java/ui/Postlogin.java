@@ -1,5 +1,6 @@
 package ui;
 
+import chess.ChessBoard;
 import chess.ChessGame;
 import client.ServerFacade;
 import model.AuthData;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.*;
+
 
 public class Postlogin {
     private final Scanner scanner;
@@ -26,20 +28,18 @@ public class Postlogin {
     public void run() {
         System.out.println("You are now logged in. Type 'help' to see available commands.");
 
-        while (true) {
-            System.out.print("[LOGGED_IN] >>> ");
-            String input = scanner.nextLine().trim();
-            if (input.isEmpty()) {
-                continue;
-            }
+        try {
+            while (true) {
+                System.out.print("[LOGGED_IN] >>> ");
+                String input = scanner.nextLine().trim();
+                if (input.isEmpty()) continue;
 
-            String[] parts = input.split("\\s+");
-            String command = parts[0].toLowerCase();
+                String[] parts = input.split("\\s+");
+                String command = parts[0].toLowerCase();
 
-            try {
                 switch (command) {
                     case "help" -> printHelp();
-                    case "logout" -> handleLogout();
+                    case "logout" -> handleLogout(); // throws ExitPostLogin
                     case "quit" -> handleQuit();
                     case "create" -> handleCreate(parts);
                     case "list" -> handleList();
@@ -47,16 +47,18 @@ public class Postlogin {
                     case "observe" -> handleObserve(parts);
                     default -> System.out.println("Unknown command. Type 'help' to see available commands.");
                 }
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
             }
+        } catch (ExitPostLogin ignored) {
+            // Return to prelogin
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
         }
     }
 
     private void handleLogout() throws Exception {
         server.logout(authToken);
         System.out.println("You have been logged out.");
-        System.exit(0);
+        throw new ExitPostLogin();
     }
 
     private void handleQuit() {
@@ -74,21 +76,8 @@ public class Postlogin {
         System.out.println("Game '" + gameName + "' created.");
     }
 
-    private void printHelp() {
-        System.out.println("""
-                === Postlogin Commands ===
-                create <NAME>             - a game
-                list                      - games
-                join <ID> [WHITE|BLACK]   - join a game
-                observe <ID>              - observe a game
-                logout                    - when you are done
-                quit                      - exit the program
-                help                      - with possible commands
-                """);
-    }
-
     private void handleList() throws Exception {
-        List<GameData> games = new ArrayList<>(server.listGames(authToken));
+        Set<GameData> games = server.listGames(authToken);
         if (games.isEmpty()) {
             System.out.println("No games available.");
             return;
@@ -96,12 +85,13 @@ public class Postlogin {
 
         gameNumberMap.clear();
         System.out.println("Available Games:");
-        for (int i = 0; i < games.size(); i++) {
-            GameData game = games.get(i);
-            gameNumberMap.put(i + 1, game);
+        int i = 1;
+        for (GameData game : games) {
+            gameNumberMap.put(i, game);
             String white = game.whiteUsername() != null ? game.whiteUsername() : "(open)";
             String black = game.blackUsername() != null ? game.blackUsername() : "(open)";
-            System.out.printf("%d. %s | White: %s | Black: %s%n", i + 1, game.gameName(), white, black);
+            System.out.printf("%d. %s | White: %s | Black: %s%n", i, game.gameName(), white, black);
+            i++;
         }
     }
 
@@ -112,23 +102,20 @@ public class Postlogin {
         }
 
         int gameNumber = parseGameNumber(parts[1]);
-        if (gameNumber == -1) {
-            return;
-        }
+        if (gameNumber == -1) return;
 
         GameData game = getGameFromNumber(gameNumber);
-        if (game == null) {
-            return;
-        }
+        if (game == null) return;
 
         ChessGame.TeamColor color = parseColor(parts[2]);
-        if (color == null) {
-            return;
-        }
+        if (color == null) return;
 
         server.joinGame(game.gameID(), color, authToken);
         System.out.println("Joined game '" + game.gameName() + "' as " + color + ".");
-        System.out.println("Drawing board... (gameplay coming soon)");
+
+        ChessBoard board = server.getGameBoard(game.gameID(), authToken);
+        boolean whitePerspective = (color == ChessGame.TeamColor.WHITE);
+        new ChessBoardDrawer(board).print(whitePerspective);
     }
 
     private void handleObserve(String[] parts) throws Exception {
@@ -138,18 +125,16 @@ public class Postlogin {
         }
 
         int gameNumber = parseGameNumber(parts[1]);
-        if (gameNumber == -1) {
-            return;
-        }
+        if (gameNumber == -1) return;
 
         GameData game = getGameFromNumber(gameNumber);
-        if (game == null) {
-            return;
-        }
+        if (game == null) return;
 
         server.observeGame(game.gameID(), authToken);
         System.out.println("Observing game '" + game.gameName() + "'.");
-        System.out.println("Drawing board... (observer mode coming soon)");
+
+        ChessBoard board = server.getGameBoard(game.gameID(), authToken);
+        new ChessBoardDrawer(board).print(true); // always white perspective
     }
 
     private int parseGameNumber(String input) {
@@ -177,4 +162,20 @@ public class Postlogin {
             return null;
         }
     }
+
+    private void printHelp() {
+        System.out.println("""
+                === Postlogin Commands ===
+                create <NAME>             - a game
+                list                      - games
+                join <ID> [WHITE|BLACK]   - join a game
+                observe <ID>              - observe a game
+                logout                    - when you are done
+                quit                      - exit the program
+                help                      - with possible commands
+                """);
+    }
+
+    // Use this to exit the loop and return to prelogin
+    public static class ExitPostLogin extends RuntimeException {}
 }

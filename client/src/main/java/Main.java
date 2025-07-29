@@ -20,12 +20,17 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         ServerFacade server = new ServerFacade(port);
 
-        Prelogin prelogin = new Prelogin(scanner, server);
-        var auth = prelogin.run();
+        while (true) {
+            Prelogin prelogin = new Prelogin(scanner, server);
+            var auth = prelogin.run();
 
-        if (auth != null) {
+            if (auth == null) {
+                // User chose to quit
+                break;
+            }
+
             Postlogin postlogin = new Postlogin(scanner, server, auth.authToken());
-            postlogin.run();
+            postlogin.run(); // this handles logout or quit
         }
 
         System.out.println("Exited");

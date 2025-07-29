@@ -1,5 +1,6 @@
 package client;
 
+import chess.ChessBoard;
 import chess.ChessGame;
 import com.google.gson.Gson;
 import model.AuthData;
@@ -7,6 +8,7 @@ import model.GameData;
 import model.GamesList;
 import model.UserData;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -101,6 +103,17 @@ public class ServerFacade {
         }
     }
 
+    public ChessBoard getGameBoard(int gameID, String authToken) throws Exception {
+        String path = "/game/" + gameID;
+        String response = requestString("GET", path, authToken);
+
+        if (response.startsWith("Error")) {
+            throw new Exception(response);
+        }
+
+        return new Gson().fromJson(response, ChessBoard.class);
+    }
+
 
     private Map<String, Object> request(String method, String path, String bodyJson, String authToken) {
         try {
@@ -120,12 +133,16 @@ public class ServerFacade {
                 }
             }
 
-            try (var inputStream = connection.getInputStream()) {
-                String response = new String(inputStream.readAllBytes());
-                return new Gson().fromJson(response, Map.class);
-            }
+            int responseCode = connection.getResponseCode();
+            InputStream inputStream = (responseCode >= 200 && responseCode < 300)
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
+
+            String response = new String(inputStream.readAllBytes());
+            return new Gson().fromJson(response, Map.class);
+
         } catch (Exception e) {
-            return Map.of("Error", e.getMessage());
+            return Map.of("Error", "Network error: " + e.getMessage());
         }
     }
 
