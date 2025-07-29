@@ -26,9 +26,10 @@ public class ServerFacade {
     public int createGame(String gameName, String authToken) {
         var body = Map.of("gameName", gameName);
         var jsonBody = new Gson().toJson(body);
-        Map resp = request("POST", "/game", jsonBody, authToken);
-        if (resp.containsKey("Error")) {
-            return -1;
+        Map<String, Object> resp = request("POST", "/game", jsonBody, authToken);
+        if (resp.containsKey("Error") || resp.containsKey("message")) {
+            String message = (String) resp.getOrDefault("Error", resp.get("message"));
+            throw new RuntimeException(message);
         }
         double gameID = (double) resp.get("gameID");
         return (int) gameID;
@@ -36,8 +37,8 @@ public class ServerFacade {
 
     public HashSet<GameData> listGames(String authToken) {
         String resp = requestString("GET", "/game", authToken);
-        if (resp.contains("Error")) {
-            return new HashSet<>();
+        if (resp.startsWith("Error")) {
+            throw new RuntimeException(resp);
         }
         GamesList games = new Gson().fromJson(resp, GamesList.class);
         return games.games();
@@ -50,8 +51,9 @@ public class ServerFacade {
         );
         var jsonBody = new Gson().toJson(credentials);
         Map<String, Object> response = request("POST", "/session", jsonBody, null);
-        if (response.containsKey("Error")) {
-            throw new Exception((String) response.get("Error"));
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
         }
         return new Gson().fromJson(new Gson().toJson(response), AuthData.class);
     }
@@ -59,16 +61,18 @@ public class ServerFacade {
     public AuthData register(UserData user) throws Exception {
         var jsonBody = new Gson().toJson(user);
         Map<String, Object> response = request("POST", "/user", jsonBody, null);
-        if (response.containsKey("Error")) {
-            throw new Exception((String) response.get("Error"));
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
         }
         return new Gson().fromJson(new Gson().toJson(response), AuthData.class);
     }
 
     public void logout(String authToken) throws Exception {
         Map<String, Object> response = request("DELETE", "/session", null, authToken);
-        if (response.containsKey("Error")) {
-            throw new Exception((String) response.get("Error"));
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
         }
     }
 
@@ -81,8 +85,9 @@ public class ServerFacade {
         }
         String jsonBody = new Gson().toJson(body);
         Map<String, Object> response = request("PUT", "/game", jsonBody, authToken);
-        if (response.containsKey("Error")) {
-            throw new Exception((String) response.get("Error"));
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
         }
 
         return true;
@@ -92,14 +97,16 @@ public class ServerFacade {
         Map<String, Object> body = Map.of("gameID", gameID);
         String jsonBody = new Gson().toJson(body);
         Map<String, Object> response = request("PUT", "/game/observe", jsonBody, authToken);
-        if (response.containsKey("Error")) {
-            throw new Exception((String) response.get("Error"));
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
         }
     }
     public void clearDB() throws Exception {
         Map<String, Object> response = request("DELETE", "/db", null, null);
-        if (response.containsKey("Error")) {
-            throw new Exception((String) response.get("Error"));
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
         }
     }
 
@@ -116,14 +123,16 @@ public class ServerFacade {
 
 
     private Map<String, Object> request(String method, String path, String bodyJson, String authToken) {
+        HttpURLConnection connection = null;
         try {
             URL url = new URL(baseURL + path);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(method);
             connection.setRequestProperty("Content-Type", "application/json");
             if (authToken != null) {
                 connection.setRequestProperty("Authorization", authToken);
             }
+
             if (method.equals("POST") || method.equals("PUT")) {
                 connection.setDoOutput(true);
                 if (bodyJson != null) {
@@ -142,9 +151,21 @@ public class ServerFacade {
             return new Gson().fromJson(response, Map.class);
 
         } catch (Exception e) {
+            try {
+                if (connection != null) {
+                    InputStream errorStream = connection.getErrorStream();
+                    if (errorStream != null) {
+                        String response = new String(errorStream.readAllBytes());
+                        return new Gson().fromJson(response, Map.class);
+                    }
+                }
+            } catch (Exception inner) {
+                // Ignore, fall through
+            }
             return Map.of("Error", "Network error: " + e.getMessage());
         }
     }
+
 
     private String requestString(String method, String path, String authToken) {
         try {

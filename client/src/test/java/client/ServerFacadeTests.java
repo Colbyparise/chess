@@ -85,8 +85,7 @@ public class ServerFacadeTests {
 
     @Test
     void createGameNegative() {
-        int gameId = facade.createGame("Cool Game", "invalidtoken");
-        assertEquals(-1, gameId);
+        assertThrows(Exception.class, () -> facade.createGame("Cool Game", "invalidtoken"));
     }
 
     @Test
@@ -99,8 +98,7 @@ public class ServerFacadeTests {
 
     @Test
     void listGamesNegative() {
-        HashSet<GameData> games = facade.listGames("invalidtoken");
-        assertTrue(games.isEmpty());
+        assertThrows(Exception.class, () -> facade.listGames("invalidtoken"));
     }
 
     @Test

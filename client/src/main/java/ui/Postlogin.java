@@ -110,14 +110,18 @@ public class Postlogin {
         ChessGame.TeamColor color = parseColor(parts[2]);
         if (color == null) return;
 
-        server.joinGame(game.gameID(), color, authToken);
-        System.out.println("Joined game '" + game.gameName() + "' as " + color + ".");
+        try {
+            server.joinGame(game.gameID(), color, authToken);
+            System.out.println("Joined game '" + game.gameName() + "' as " + color + ".");
 
-        ChessBoard board = server.getGameBoard(game.gameID(), authToken);
-        boolean whitePerspective = (color == ChessGame.TeamColor.WHITE);
-        new ChessBoardDrawer(board).print(whitePerspective);
+            ChessBoard board = server.getGameBoard(game.gameID(), authToken);
+            boolean whitePerspective = (color == ChessGame.TeamColor.WHITE);
+            new ChessBoardDrawer(board).print(whitePerspective);
+        } catch (Exception e) {
+            // Print the error, but don't exit the postlogin loop
+            System.out.println("Error: " + e.getMessage());
+        }
     }
-
     private void handleObserve(String[] parts) throws Exception {
         if (parts.length != 2) {
             System.out.println("Usage: observe <ID>");
@@ -165,7 +169,6 @@ public class Postlogin {
 
     private void printHelp() {
         System.out.println("""
-                === Postlogin Commands ===
                 create <NAME>             - a game
                 list                      - games
                 join <ID> [WHITE|BLACK]   - join a game
