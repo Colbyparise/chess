@@ -110,6 +110,7 @@ public class Gameplay {
         new ChessBoardDrawer(board).printWithHighlights(pos, legalMoves);
     }
 
+
     private ChessPosition parsePosition(String pos) {
         if (pos.length() != 2) {
             System.out.println("Invalid position. Use format like e2.");

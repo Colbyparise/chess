@@ -2,6 +2,7 @@ package client;
 
 import chess.ChessBoard;
 import chess.ChessGame;
+import chess.ChessMove;
 import com.google.gson.Gson;
 import model.AuthData;
 import model.GameData;
@@ -119,6 +120,41 @@ public class ServerFacade {
         }
 
         return new Gson().fromJson(response, ChessBoard.class);
+    }
+    public void leaveGame(int gameId, String authToken) throws Exception {
+        var body = Map.of("gameID", gameId);
+        var jsonBody = new Gson().toJson(body);
+        Map<String, Object> response = request("POST", "/game/leave", jsonBody, authToken);
+
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
+        }
+    }
+
+    public void makeMove(int gameId, String authToken, ChessMove move) throws Exception {
+        var body = Map.of(
+                "gameID", gameId,
+                "move", move
+        );
+        var jsonBody = new Gson().toJson(body);
+        Map<String, Object> response = request("POST", "/game/move", jsonBody, authToken);
+
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
+        }
+    }
+
+    public void resignGame(int gameId, String authToken) throws Exception {
+        var body = Map.of("gameID", gameId);
+        var jsonBody = new Gson().toJson(body);
+        Map<String, Object> response = request("POST", "/game/resign", jsonBody, authToken);
+
+        if (response.containsKey("Error") || response.containsKey("message")) {
+            String message = (String) response.getOrDefault("Error", response.get("message"));
+            throw new Exception(message);
+        }
     }
 
 
