@@ -117,6 +117,15 @@ public class Postlogin {
             ChessBoard board = server.getGameBoard(game.gameID(), authToken);
             boolean whitePerspective = (color == ChessGame.TeamColor.WHITE);
             new ChessBoardDrawer(board).print(whitePerspective);
+            Gameplay gameplay = new Gameplay(
+                    scanner,
+                    server,
+                    game.gameID(),
+                    false, // not an observer
+                    color,
+                    authToken
+            );
+            gameplay.run();
         } catch (Exception e) {
             // Print the error, but don't exit the postlogin loop
             System.out.println("Error: " + e.getMessage());
@@ -139,6 +148,15 @@ public class Postlogin {
 
         ChessBoard board = server.getGameBoard(game.gameID(), authToken);
         new ChessBoardDrawer(board).print(true); // always white perspective
+        Gameplay gameplay = new Gameplay(
+                scanner,
+                server,
+                game.gameID(),
+                true, // observer
+                null,
+                authToken
+        );
+        gameplay.run();
     }
 
     private int parseGameNumber(String input) {

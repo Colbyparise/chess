@@ -4,31 +4,44 @@ import chess.ChessBoard;
 import chess.ChessGame;
 import chess.ChessMove;
 import chess.ChessPosition;
+import client.ClientSender;
 import client.ServerFacade;
+import client.ServerMessageHandler;
+import websocket.commands.MakeMoveCommand;
+import websocket.commands.UserGameCommand;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
+import websocket.messages.ServerMessage;
+
 
 import java.util.Collection;
 import java.util.Scanner;
 
-public class Gameplay {
+public class Gameplay implements ServerMessageHandler {
     private final Scanner scanner;
-    private final ServerFacade server;
     private final int gameId;
     private final boolean isObserver;
     private final ChessGame.TeamColor playerColor;
     private final String authToken;
+    private ChessGame currentGame;
+    private final ClientSender sender;
+    private final ServerFacade server;
 
-    public Gameplay(Scanner scanner, ServerFacade server, int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken) {
+    public Gameplay(Scanner scanner, ServerFacade server,int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken) {
         this.scanner = scanner;
         this.server = server;
         this.gameId = gameId;
         this.isObserver = isObserver;
         this.playerColor = playerColor;
         this.authToken = authToken;
+        this.sender = new ClientSender(this);
     }
 
     public void run() {
-        System.out.println("You are now in game " + gameId + ". Type 'help' for a list of commands.");
-        drawBoard();
+        System.out.println("Connecting to game " + gameId + "...");
+
+        sender.connect("ws://localhost:8080/ws", new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameId));
 
         while (true) {
             System.out.print("[IN_GAME] >>> ");
@@ -44,7 +57,7 @@ public class Gameplay {
                     case "redraw" -> drawBoard();
                     case "move" -> handleMove(parts);
                     case "leave" -> {
-                        server.leaveGame(gameId, authToken);
+                        sender.sendCommand(new UserGameCommand(UserGameCommand.CommandType.LEAVE, authToken, gameId));
                         System.out.println("You have left the game.");
                         return;
                     }
@@ -59,16 +72,15 @@ public class Gameplay {
     }
 
     private void drawBoard() {
-        try {
-            ChessBoard board = server.getGameBoard(gameId, authToken);
-            boolean whiteOnBottom = isObserver || playerColor == ChessGame.TeamColor.WHITE;
-            new ChessBoardDrawer(board).print(whiteOnBottom);
-        } catch (Exception e) {
-            System.out.println("Unable to draw board: " + e.getMessage());
+        if (currentGame == null) {
+            System.out.println("No game state available.");
+            return;
         }
+        boolean whiteOnBottom = isObserver || playerColor == ChessGame.TeamColor.WHITE;
+        new ChessBoardDrawer(currentGame.getBoard()).print(whiteOnBottom);
     }
 
-    private void handleMove(String[] parts) throws Exception {
+    private void handleMove(String[] parts) {
         if (parts.length != 3) {
             System.out.println("Usage: move <from> <to> (e.g., move e2 e4)");
             return;
@@ -76,40 +88,35 @@ public class Gameplay {
 
         ChessPosition from = parsePosition(parts[1]);
         ChessPosition to = parsePosition(parts[2]);
-
         if (from == null || to == null) return;
 
-        ChessMove move = new ChessMove(from, to, null); // Add promotion logic if needed
-        server.makeMove(gameId, authToken, move);
-        System.out.println("Move made: " + parts[1] + " to " + parts[2]);
-        drawBoard();
+        sender.sendCommand(new MakeMoveCommand(authToken, gameId, new ChessMove(from, to, null)));
     }
 
-    private void handleResign() throws Exception {
+    private void handleResign() {
         System.out.print("Are you sure you want to resign? (yes/no): ");
         String confirmation = scanner.nextLine().trim().toLowerCase();
         if (confirmation.equals("yes")) {
-            server.resignGame(gameId, authToken);
+            sender.sendCommand(new UserGameCommand(UserGameCommand.CommandType.RESIGN, authToken, gameId));
             System.out.println("You have resigned. Game over.");
         } else {
             System.out.println("Resignation cancelled.");
         }
     }
 
-    private void handleHighlight(String[] parts) throws Exception {
+    private void handleHighlight(String[] parts) {
         if (parts.length != 2) {
             System.out.println("Usage: highlight <position> (e.g., highlight e2)");
             return;
         }
 
         ChessPosition pos = parsePosition(parts[1]);
-        if (pos == null) return;
+        if (pos == null || currentGame == null) return;
 
-        ChessBoard board = server.getGameBoard(gameId, authToken);
+        ChessBoard board = currentGame.getBoard();
         Collection<ChessMove> legalMoves = board.getPiece(pos).pieceMoves(board, pos);
         new ChessBoardDrawer(board).printWithHighlights(pos, legalMoves);
     }
-
 
     private ChessPosition parsePosition(String pos) {
         if (pos.length() != 2) {
@@ -139,4 +146,16 @@ public class Gameplay {
                 """);
     }
 
+    // Called automatically when server sends messages
+    @Override
+    public void handle(ServerMessage message) {
+        switch (message.getServerMessageType()) {
+            case LOAD_GAME -> {
+                this.currentGame = ((LoadGameMessage) message).getGame();
+                drawBoard();
+            }
+            case ERROR -> System.out.println(((ErrorMessage) message).getErrorMessage());
+            case NOTIFICATION -> System.out.println(((NotificationMessage) message).getMessage());
+        }
+    }
 }
