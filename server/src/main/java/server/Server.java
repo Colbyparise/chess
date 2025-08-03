@@ -6,6 +6,7 @@ import dataaccess.*;
 import service.GameService;
 import service.UserService;
 import spark.*;
+import server.websocket.WebSocketHandler;
 
 public class Server {
 
@@ -13,6 +14,7 @@ public class Server {
         Spark.port(desiredPort);
 
         Spark.staticFiles.location("web");
+        Spark.webSocket("/ws", WebSocketHandler.class);
 
         // DAOs
         UserDAO userDAO = new SQLUserDAO();
