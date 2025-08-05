@@ -48,6 +48,7 @@ public class GameCommandProcessor {
             GameData gameData = gameDAO.getGame(command.getGameID());
 
             ClientSessionManager.addToGame(command.getGameID(), session, username);
+            ClientSessionManager.registerSession(session, command.getGameID(), username);
 
             ServerMessage load = new LoadGame(gameData.game());
             WebSocketHandler.sendToSession(session, load);
@@ -68,6 +69,7 @@ public class GameCommandProcessor {
             String username = authDAO.getAuth(command.getAuthToken()).username();
             GameData gameData = gameDAO.getGame(command.getGameID());
 
+
             ChessGame game = gameData.game();
             ChessMove move = command.getMove();
 
@@ -84,8 +86,12 @@ public class GameCommandProcessor {
             ServerMessage load = new LoadGame(game);
             ClientSessionManager.broadcastToGame(command.getGameID(), load);
 
-            String moveMsg = username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition();
-            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveMsg));
+            Notification notification = new Notification(
+                    username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition()
+            );
+
+            // Send notification to all EXCEPT the player who made the move
+            ClientSessionManager.broadcastToGameExcept(command.getGameID(), username, notification);
 
             ChessGame.TeamColor opponent = (game.getTeamTurn() == ChessGame.TeamColor.WHITE)
                     ? ChessGame.TeamColor.BLACK
@@ -101,6 +107,7 @@ public class GameCommandProcessor {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
         }
     }
+
 
     public void handleLeave(UserGameCommand command, Session session) {
         try {
