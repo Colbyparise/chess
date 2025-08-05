@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
 import dataaccess.UserDAO;
+import model.AuthData;
 import model.GameData;
 import org.eclipse.jetty.websocket.api.Session;
 import websocket.commands.MakeMove;
@@ -64,47 +65,67 @@ public class GameCommandProcessor {
         }
     }
 
-    public void handleMakeMove(MakeMove command, Session session) {
+    public void handleMakeMove(UserGameCommand command, Session session) {
         try {
-            String username = authDAO.getAuth(command.getAuthToken()).username();
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            if (auth == null) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid auth token."));
+                return;
+            }
+
+            String username = auth.username();
             GameData gameData = gameDAO.getGame(command.getGameID());
-
-
             ChessGame game = gameData.game();
-            ChessMove move = command.getMove();
 
-            game.makeMove(move);
+            if (game.isGameOver()) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("The game is already over."));
+                return;
+            }
 
-            gameDAO.updateGame(new GameData(
-                    command.getGameID(),
-                    gameData.whiteUsername(),
-                    gameData.blackUsername(),
-                    gameData.gameName(),
-                    game
-            ));
+            ChessGame.TeamColor currentTurn = gameData.game().getTeamTurn();
+            ChessGame.TeamColor playerColor = getPlayerColor(gameData, username);
 
-            ServerMessage load = new LoadGame(game);
+            System.out.printf("Move requested by: %s | Player color: %s | Turn: %s\n", username, playerColor, currentTurn);
+
+            if (playerColor == null) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("You are not a player in this game."));
+                return;
+            }
+
+            if (playerColor != currentTurn) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("It's not your turn."));
+                return;
+            }
+
+            MakeMove moveCommand = (MakeMove) command;
+            ChessMove move = moveCommand.getMove();
+
+            gameData.game().makeMove(move);
+            gameDAO.updateGame(gameData);
+
+            ServerMessage load = new LoadGame(gameData.game());
             ClientSessionManager.broadcastToGame(command.getGameID(), load);
 
-            Notification notification = new Notification(
-                    username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition()
-            );
+            String moveDesc = String.format("%s moved from %s to %s",
+                    username,
+                    move.getStartPosition(),
+                    move.getEndPosition());
 
-            // Send notification to all EXCEPT the player who made the move
-            ClientSessionManager.broadcastToGameExcept(command.getGameID(), username, notification);
+            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveDesc), session);
 
-            ChessGame.TeamColor opponent = (game.getTeamTurn() == ChessGame.TeamColor.WHITE)
-                    ? ChessGame.TeamColor.BLACK
-                    : ChessGame.TeamColor.WHITE;
-
-            if (game.isInCheckmate(opponent)) {
-                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Checkmate!"));
-            } else if (game.isInCheck(opponent)) {
-                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Check!"));
-            }
 
         } catch (Exception e) {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
+        }
+    }
+
+    private ChessGame.TeamColor getPlayerColor(GameData gameData, String username) {
+        if (username.equals(gameData.whiteUsername())) {
+            return ChessGame.TeamColor.WHITE;
+        } else if (username.equals(gameData.blackUsername())) {
+            return ChessGame.TeamColor.BLACK;
+        } else {
+            return null;
         }
     }
 
@@ -112,7 +133,27 @@ public class GameCommandProcessor {
     public void handleLeave(UserGameCommand command, Session session) {
         try {
             String username = authDAO.getAuth(command.getAuthToken()).username();
+            GameData gameData = gameDAO.getGame(command.getGameID());
+
             ClientSessionManager.removeFromGame(command.getGameID(), session);
+
+            String whiteUsername = gameData.whiteUsername();
+            String blackUsername = gameData.blackUsername();
+
+            if (username.equals(whiteUsername)) {
+                whiteUsername = null;
+            } else if (username.equals(blackUsername)) {
+                blackUsername = null;
+            }
+
+            // Save updated game data
+            gameDAO.updateGame(new GameData(
+                    command.getGameID(),
+                    whiteUsername,
+                    blackUsername,
+                    gameData.gameName(),
+                    gameData.game()
+            ));
 
             String msg = username + " left the game.";
             ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(msg), session);
@@ -122,12 +163,27 @@ public class GameCommandProcessor {
         }
     }
 
+
     public void handleResign(UserGameCommand command, Session session) {
         try {
             String username = authDAO.getAuth(command.getAuthToken()).username();
             GameData gameData = gameDAO.getGame(command.getGameID());
 
             ChessGame game = gameData.game();
+            if (game.isGameOver()) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("Game is already over."));
+                return;
+            }
+
+            boolean isWhite = username.equals(gameData.whiteUsername());
+            boolean isBlack = username.equals(gameData.blackUsername());
+
+            if (!isWhite && !isBlack) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("Observers cannot resign."));
+                return;
+            }
+
+
             game.setGameOver(true);
 
             gameDAO.updateGame(new GameData(

@@ -55,32 +55,37 @@ public class GameService {
         }
     }
 
-        public boolean joinGame(String authToken, int gameID, String color) throws DataAccessException {
+    public boolean joinGame(String authToken, int gameID, String color) throws DataAccessException {
         AuthData authData = validateAuth(authToken);
         GameData gameData = getGameData(gameID);
-
         validateColor(color);
 
-        String updatedWhiteUser = gameData.whiteUsername();
-        String updatedBlackUser = gameData.blackUsername();
+        String username = authData.username();
+        String white = gameData.whiteUsername();
+        String black = gameData.blackUsername();
 
-        if (Objects.equals(color, "WHITE")) {
-            if (updatedWhiteUser != null) {
+        if (color.equalsIgnoreCase("WHITE")) {
+            if (white != null && !white.equals(username)) {
                 return false;
-            } else {
-                updatedWhiteUser = authData.username();
             }
-        } else {
-            if (updatedBlackUser != null) {
+            white = username;
+        } else if (color.equalsIgnoreCase("BLACK")) {
+            if (black != null && !black.equals(username)) {
                 return false;
-            } else {
-                updatedBlackUser = authData.username();
             }
+            black = username;
         }
 
-        gameDAO.updateGame(new GameData(gameID, updatedWhiteUser, updatedBlackUser, gameData.gameName(), gameData.game()));
+        gameDAO.updateGame(new GameData(
+                gameID,
+                white,
+                black,
+                gameData.gameName(),
+                gameData.game()
+        ));
         return true;
     }
+
 
     public void clear() {
         gameDAO.clear();
