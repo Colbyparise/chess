@@ -3,6 +3,7 @@ package server;
 import chess.ChessGame;
 import com.google.gson.Gson;
 import dataaccess.*;
+import server.websocket.GameCommandProcessor;
 import service.GameService;
 import service.UserService;
 import spark.*;
@@ -29,6 +30,9 @@ public class Server {
         UserHandler userHandler = new UserHandler(userService);
         GameHandler gameHandler = new GameHandler(gameService);
         ClearHandler clearHandler = new ClearHandler(userService, gameService);
+
+        GameCommandProcessor processor = new GameCommandProcessor(userDAO, authDAO, gameDAO);
+        WebSocketHandler.init(processor);
 
         //endpoints
         Spark.delete("/db", clearHandler::handleClear);

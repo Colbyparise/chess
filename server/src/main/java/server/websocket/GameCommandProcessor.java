@@ -1,16 +1,22 @@
 package server.websocket;
 
-import chess.*;
+import chess.ChessGame;
+import chess.ChessMove;
 import com.google.gson.Gson;
-import dataaccess.*;
+import dataaccess.AuthDAO;
+import dataaccess.GameDAO;
+import dataaccess.UserDAO;
 import model.GameData;
-import websocket.commands.MakeMoveCommand;
-import websocket.commands.UserGameCommand;
-import websocket.messages.*;
-
 import org.eclipse.jetty.websocket.api.Session;
+import websocket.commands.MakeMove;
+import websocket.commands.UserGameCommand;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGame;
+import websocket.messages.Notification;
+import websocket.messages.ServerMessage;
 
 public class GameCommandProcessor {
+
     private static final Gson gson = new Gson();
     private final UserDAO userDAO;
     private final AuthDAO authDAO;
@@ -22,6 +28,20 @@ public class GameCommandProcessor {
         this.gameDAO = gameDAO;
     }
 
+    public void execute(Session session, UserGameCommand command) {
+        try {
+            switch (command.getCommandType()) {
+                case CONNECT -> handleConnect(command, session);
+                case MAKE_MOVE -> handleMakeMove((MakeMove) command, session);
+                case LEAVE -> handleLeave(command, session);
+                case RESIGN -> handleResign(command, session);
+                default -> WebSocketHandler.sendToSession(session, new ErrorMessage("Unknown command type."));
+            }
+        } catch (Exception e) {
+            WebSocketHandler.sendToSession(session, new ErrorMessage("Command execution error: " + e.getMessage()));
+        }
+    }
+
     public void handleConnect(UserGameCommand command, Session session) {
         try {
             String username = authDAO.getAuth(command.getAuthToken()).username();
@@ -29,22 +49,21 @@ public class GameCommandProcessor {
 
             ClientSessionManager.addToGame(command.getGameID(), session, username);
 
-            // Send full game state back to new client
-            ServerMessage load = new LoadGameMessage(gameData.game());
+            ServerMessage load = new LoadGame(gameData.game());
             WebSocketHandler.sendToSession(session, load);
 
-            // Notify others
-            String role = (gameData.whiteUsername().equals(username)) ? "White"
-                    : (gameData.blackUsername().equals(username)) ? "Black"
+            String role = (username.equals(gameData.whiteUsername())) ? "White"
+                    : (username.equals(gameData.blackUsername())) ? "Black"
                     : "Observer";
-            ServerMessage notify = new NotificationMessage(username + " joined the game as " + role);
+            ServerMessage notify = new Notification(username + " joined the game as " + role);
             ClientSessionManager.broadcastToGame(command.getGameID(), notify, session);
+
         } catch (Exception e) {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
         }
     }
 
-    public void handleMakeMove(MakeMoveCommand command, Session session) {
+    public void handleMakeMove(MakeMove command, Session session) {
         try {
             String username = authDAO.getAuth(command.getAuthToken()).username();
             GameData gameData = gameDAO.getGame(command.getGameID());
@@ -53,19 +72,29 @@ public class GameCommandProcessor {
             ChessMove move = command.getMove();
 
             game.makeMove(move);
-            gameDAO.updateGame(new GameData(
-                    command.getGameID(), gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game));
 
-            ServerMessage load = new LoadGameMessage(game);
+            gameDAO.updateGame(new GameData(
+                    command.getGameID(),
+                    gameData.whiteUsername(),
+                    gameData.blackUsername(),
+                    gameData.gameName(),
+                    game
+            ));
+
+            ServerMessage load = new LoadGame(game);
             ClientSessionManager.broadcastToGame(command.getGameID(), load);
 
-            String msg = username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition();
-            ClientSessionManager.broadcastToGame(command.getGameID(), new NotificationMessage(msg));
+            String moveMsg = username + " moved from " + move.getStartPosition() + " to " + move.getEndPosition();
+            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveMsg));
 
-            if (game.isInCheckmate(game.getTeamTurn())) {
-                ClientSessionManager.broadcastToGame(command.getGameID(), new NotificationMessage("Checkmate!"));
-            } else if (game.isInCheck(game.getTeamTurn())) {
-                ClientSessionManager.broadcastToGame(command.getGameID(), new NotificationMessage("Check!"));
+            ChessGame.TeamColor opponent = (game.getTeamTurn() == ChessGame.TeamColor.WHITE)
+                    ? ChessGame.TeamColor.BLACK
+                    : ChessGame.TeamColor.WHITE;
+
+            if (game.isInCheckmate(opponent)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Checkmate!"));
+            } else if (game.isInCheck(opponent)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Check!"));
             }
 
         } catch (Exception e) {
@@ -79,7 +108,8 @@ public class GameCommandProcessor {
             ClientSessionManager.removeFromGame(command.getGameID(), session);
 
             String msg = username + " left the game.";
-            ClientSessionManager.broadcastToGame(command.getGameID(), new NotificationMessage(msg), session);
+            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(msg), session);
+
         } catch (Exception e) {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
         }
@@ -94,10 +124,16 @@ public class GameCommandProcessor {
             game.setGameOver(true);
 
             gameDAO.updateGame(new GameData(
-                    command.getGameID(), gameData.whiteUsername(), gameData.blackUsername(), gameData.gameName(), game));
+                    command.getGameID(),
+                    gameData.whiteUsername(),
+                    gameData.blackUsername(),
+                    gameData.gameName(),
+                    game
+            ));
 
             String msg = username + " has resigned.";
-            ClientSessionManager.broadcastToGame(command.getGameID(), new NotificationMessage(msg));
+            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(msg));
+
         } catch (Exception e) {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
         }

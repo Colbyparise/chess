@@ -33,6 +33,7 @@ public class UserGameCommand {
         return commandType;
     }
 
+
     public String getAuthToken() {
         return authToken;
     }

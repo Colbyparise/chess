@@ -7,11 +7,11 @@ import chess.ChessPosition;
 import client.ClientSender;
 import client.ServerFacade;
 import client.ServerMessageHandler;
-import websocket.commands.MakeMoveCommand;
+import websocket.commands.MakeMove;
 import websocket.commands.UserGameCommand;
 import websocket.messages.ErrorMessage;
-import websocket.messages.LoadGameMessage;
-import websocket.messages.NotificationMessage;
+import websocket.messages.LoadGame;
+import websocket.messages.Notification;
 import websocket.messages.ServerMessage;
 
 
@@ -28,7 +28,7 @@ public class Gameplay implements ServerMessageHandler {
     private final ClientSender sender;
     private final ServerFacade server;
 
-    public Gameplay(Scanner scanner, ServerFacade server,int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken) {
+    public Gameplay(Scanner scanner, ServerFacade server, int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken) {
         this.scanner = scanner;
         this.server = server;
         this.gameId = gameId;
@@ -90,7 +90,7 @@ public class Gameplay implements ServerMessageHandler {
         ChessPosition to = parsePosition(parts[2]);
         if (from == null || to == null) return;
 
-        sender.sendCommand(new MakeMoveCommand(authToken, gameId, new ChessMove(from, to, null)));
+        sender.sendCommand(new MakeMove(authToken, gameId, new ChessMove(from, to, null)));
     }
 
     private void handleResign() {
@@ -151,11 +151,11 @@ public class Gameplay implements ServerMessageHandler {
     public void handle(ServerMessage message) {
         switch (message.getServerMessageType()) {
             case LOAD_GAME -> {
-                this.currentGame = ((LoadGameMessage) message).getGame();
+                this.currentGame = ((LoadGame) message).getGame();
                 drawBoard();
             }
-            case ERROR -> System.out.println(((ErrorMessage) message).getErrorMessage());
-            case NOTIFICATION -> System.out.println(((NotificationMessage) message).getMessage());
+            case ERROR -> System.out.println(((ErrorMessage) message).getMessage());
+            case NOTIFICATION -> System.out.println(((Notification) message).getMessage());
         }
     }
 }
