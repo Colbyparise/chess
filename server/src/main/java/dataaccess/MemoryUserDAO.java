@@ -2,51 +2,47 @@ package dataaccess;
 
 import model.UserData;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MemoryUserDAO implements UserDAO {
-    private HashSet<UserData> db;
 
-    public MemoryUserDAO() {
-        db = HashSet.newHashSet(6);
-    }
+    private final Map<String, UserData> userTable = new HashMap<>();
 
-
-    @Override
-    public void createUser(UserData userData) throws DataAccessException {
-        try {
-            getUser(userData.username());
-        }
-        catch (DataAccessException exception) {
-            db.add(userData);
-            return;
-        }
-        throw new DataAccessException("User already exists: " + userData.username());
-    }
-
-    @Override
-    public boolean authenticateUser(String username, String password) throws DataAccessException {
-        for (UserData user : db) {
-            if (user.username().equals(username)) {
-                return user.password().equals(password);
-            }
-        }
-        throw new DataAccessException("User does not exist: " + username);
-    }
+    public MemoryUserDAO() {}
 
 
     @Override
     public UserData getUser(String username) throws DataAccessException {
-        for (UserData userData : db) {
-            if (userData.username().equals(username)) {
-                return userData;
-            }
+        UserData user = userTable.get(username);
+        if (user == null) {
+            throw new DataAccessException("No user found for username: " + username);
         }
-        throw new DataAccessException("User not found: " + username);
+        return user;
     }
-    //remove userdata
+
+    @Override
+    public void createUser(UserData newUser) throws DataAccessException {
+        String username = newUser.username();
+        if (userTable.containsKey(username)) {
+            throw new DataAccessException("Username already in use: " + username);
+        }
+        userTable.put(username, newUser);
+    }
+
+    @Override
+    public boolean authenticateUser(String username, String password) throws DataAccessException {
+        UserData foundUser = userTable.get(username);
+
+        if (foundUser == null) {
+            throw new DataAccessException("Authentication failed — user not found: " + username);
+        }
+
+        return foundUser.password().equals(password);
+    }
+
     @Override
     public void clear() {
-        db = HashSet.newHashSet(16);
+        userTable.clear();
     }
 }

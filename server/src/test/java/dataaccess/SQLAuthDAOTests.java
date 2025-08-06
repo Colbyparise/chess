@@ -13,7 +13,7 @@ class SQLAuthDAOTests {
     @BeforeEach
     void setUp() {
         authDAO = new SQLAuthDAO();
-        authDAO.clear(); // clear table before each test
+        authDAO.clear();
     }
 
     @Test
@@ -42,7 +42,7 @@ class SQLAuthDAOTests {
     @Test
     void getAuthNegative() throws DataAccessException {
         AuthData result = authDAO.getAuth("nonexistent");
-        assertNull(result);  // not found should return null
+        assertNull(result);
     }
 
     @Test

@@ -1,23 +1,16 @@
 package chess;
 
-import java.util.HashSet;
+import java.util.Set;
 
-public class QueenMovesCalculator implements PieceMovesCalculator{
-    public static HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition position) {
-        int row = position.getRow();
-        int col = position.getColumn();
+public class QueenMovesCalculator implements PieceMovesCalculator {
 
-        int[][] moves = {
-                {1, -1},
-                {1, 1},
-                {-1, 1},
-                {-1, -1},
-                {0,1 },
-                {0, -1},
-                {1, 0},
-                {-1, 0}
-        };
-        ChessGame.TeamColor team = board.getColor(position);
-        return PieceMovesCalculator.directionalMoves(board, position, moves, row, col, team);
+    private static final int[][] QUEEN_DIRECTIONS = {
+            {-1, -1}, {-1, 0}, {-1, 1}, { 0, -1}, { 0, 1}, { 1, -1}, { 1, 0}, { 1, 1}
+    };
+
+    @Override
+    public Set<ChessMove> calculateMoves(ChessBoard board, ChessPosition from) {
+        ChessGame.TeamColor team = board.getColor(from);
+        return MoveUtils.generateDirectionalMoves(board, from, QUEEN_DIRECTIONS, team);
     }
 }

@@ -148,7 +148,6 @@ public class Gameplay implements ServerMessageHandler {
                 """);
     }
 
-    // Called automatically when server sends messages
     @Override
     public void handle(ServerMessage message) {
         switch (message.getServerMessageType()) {

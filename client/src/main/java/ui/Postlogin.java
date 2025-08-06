@@ -41,7 +41,7 @@ public class Postlogin {
 
                 switch (command) {
                     case "help" -> printHelp();
-                    case "logout" -> handleLogout(); // throws ExitPostLogin
+                    case "logout" -> handleLogout();
                     case "quit" -> handleQuit();
                     case "create" -> handleCreate(parts);
                     case "list" -> handleList();

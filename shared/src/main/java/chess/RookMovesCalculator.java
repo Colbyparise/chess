@@ -1,20 +1,16 @@
 package chess;
 
-import java.util.HashSet;
+import java.util.Set;
 
-public class RookMovesCalculator implements PieceMovesCalculator{
+public class RookMovesCalculator implements PieceMovesCalculator {
 
-    public static HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition position) {
-        int row = position.getRow();
-        int col = position.getColumn();
+    private static final int[][] ROOK_DIRECTIONS = {
+            {-1, 0}, {1, 0}, {0, -1}, {0, 1}
+    };
 
-        int[][] moves = {
-                {1, 0},
-                {0, 1},
-                {-1, 0},
-                {0, -1}
-        };
-        ChessGame.TeamColor team = board.getColor(position);
-        return PieceMovesCalculator.directionalMoves(board, position, moves, row, col, team);
+    @Override
+    public Set<ChessMove> calculateMoves(ChessBoard board, ChessPosition from) {
+        ChessGame.TeamColor team = board.getColor(from);
+        return MoveUtils.generateDirectionalMoves(board, from, ROOK_DIRECTIONS, team);
     }
 }

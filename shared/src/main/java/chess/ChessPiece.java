@@ -57,14 +57,15 @@ public class ChessPiece {
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         return switch (type) {
-            case KING -> KingMovesCalculator.calculateMoves(board, myPosition);
-            case QUEEN -> QueenMovesCalculator.calculateMoves(board, myPosition);
-            case ROOK -> RookMovesCalculator.calculateMoves(board, myPosition);
-            case BISHOP -> BishopMovesCalculator.calculateMoves(board, myPosition);
-            case KNIGHT -> KnightMovesCalculator.calculateMoves(board, myPosition);
-            case PAWN -> PawnMovesCalculator.calculateMoves(board, myPosition);
+            case KING -> new KingMovesCalculator().calculateMoves(board, myPosition);
+            case QUEEN -> new QueenMovesCalculator().calculateMoves(board, myPosition);
+            case ROOK -> new RookMovesCalculator().calculateMoves(board, myPosition);
+            case BISHOP -> new BishopMovesCalculator().calculateMoves(board, myPosition);
+            case KNIGHT -> new KnightMovesCalculator().calculateMoves(board, myPosition);
+            case PAWN -> new PawnMovesCalculator().calculateMoves(board, myPosition);
         };
     }
+
 
     @Override
     public boolean equals(Object o) {

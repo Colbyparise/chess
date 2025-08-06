@@ -1,24 +1,17 @@
 package chess;
 
-import java.util.HashSet;
+import java.util.Set;
 
-public class KnightMovesCalculator implements PieceMovesCalculator{
+public class KnightMovesCalculator implements PieceMovesCalculator {
 
-    public static HashSet<ChessMove> calculateMoves(ChessBoard board, ChessPosition position) {
-        int row = position.getRow();
-        int col = position.getColumn();
+    private static final int[][] KNIGHT_OFFSETS = {
+            {1, 2}, {2, 1}, {-1, 2}, {-2, 1},
+            {-1, -2}, {1, -2}, {2, -1}, {-2, -1}
+    };
 
-        int[][] moves = {
-                {1, 2},
-                {2, 1},
-                {-1, 2},
-                {-2, 1},
-                {-1, -2},
-                {1, -2},
-                {2, -1},
-                {-2, -1}
-
-        };;
-        return PieceMovesCalculator.staticMoves(position, moves, board);
+    @Override
+    public Set<ChessMove> calculateMoves(ChessBoard board, ChessPosition from) {
+        ChessGame.TeamColor team = board.getColor(from);
+        return MoveUtils.generateFixedMoves(board, from, KNIGHT_OFFSETS, team);
     }
 }

@@ -23,7 +23,7 @@ public class GameService {
 
     public HashSet<GameData> listGames(String authToken) throws DataAccessException {
         validateAuth(authToken);
-        return gameDAO.listGames(); // Returns all games
+        return new HashSet<>(gameDAO.listGames()); // Returns all games
     }
 
 
