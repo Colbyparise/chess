@@ -18,7 +18,7 @@ import websocket.messages.ServerMessage;
 
 public class GameCommandProcessor {
 
-    private static final Gson Gson = new Gson();
+    private static final Gson GSON = new Gson();
     private final UserDAO userDAO;
     private final AuthDAO authDAO;
     private final GameDAO gameDAO;
@@ -44,26 +44,44 @@ public class GameCommandProcessor {
     }
 
     public void handleConnect(UserGameCommand command, Session session) {
+        String username;
+        GameData gameData;
         try {
-            String username = authDAO.getAuth(command.getAuthToken()).username();
-            GameData gameData = gameDAO.getGame(command.getGameID());
+            var auth = authDAO.getAuth(command.getAuthToken());
+            if (auth == null) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid or expired auth token."));
+                return;
+            }
+            username = auth.username();
+        } catch (Exception e) {
+            WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid auth token."));
+            return;
+        }
 
+        try {
+            gameData = gameDAO.getGame(command.getGameID());
+        } catch (Exception e) {
+            WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid game ID."));
+            return;
+        }
+
+        try {
             ClientSessionManager.addToGame(command.getGameID(), session, username);
             ClientSessionManager.registerSession(session, command.getGameID(), username);
 
-            ServerMessage load = new LoadGame(gameData.game());
-            WebSocketHandler.sendToSession(session, load);
+            WebSocketHandler.sendToSession(session, new LoadGame(gameData.game()));
 
             String role = (username.equals(gameData.whiteUsername())) ? "White"
                     : (username.equals(gameData.blackUsername())) ? "Black"
                     : "Observer";
-            ServerMessage notify = new Notification(username + " joined the game as " + role);
-            ClientSessionManager.broadcastToGame(command.getGameID(), notify, session);
-
+            ClientSessionManager.broadcastToGame(command.getGameID(),
+                    new Notification(username + " joined the game as " + role),
+                    session);
         } catch (Exception e) {
-            WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
+            WebSocketHandler.sendToSession(session, new ErrorMessage("Failed to complete connection."));
         }
     }
+
 
     public void handleMakeMove(UserGameCommand command, Session session) {
             try {

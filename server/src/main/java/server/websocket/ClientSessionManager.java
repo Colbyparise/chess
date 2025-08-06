@@ -10,24 +10,24 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ClientSessionManager {
-    private static final Map<Integer, Set<Session>> GameSessions = new ConcurrentHashMap<>();
-    private static final Map<Session, String> SessionToUsername = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<Session, ClientInfo> SessionInfo = new ConcurrentHashMap<>();
+    private static final Map<Integer, Set<Session>> GAME_SESSIONS = new ConcurrentHashMap<>();
+    private static final Map<Session, String> SESSION_TO_USERNAME = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, ClientInfo> SESSION_INFO = new ConcurrentHashMap<>();
 
     public static void addToGame(int gameID, Session session, String username) {
-        GameSessions.computeIfAbsent(gameID, k -> ConcurrentHashMap.newKeySet()).add(session);
-        SessionToUsername.put(session, username);
+        GAME_SESSIONS.computeIfAbsent(gameID, k -> ConcurrentHashMap.newKeySet()).add(session);
+        SESSION_TO_USERNAME .put(session, username);
     }
 
     public static void removeFromGame(int gameID, Session session) {
-        Set<Session> sessions = GameSessions.getOrDefault(gameID, Set.of());
+        Set<Session> sessions = GAME_SESSIONS.getOrDefault(gameID, Set.of());
         sessions.remove(session);
-        SessionToUsername.remove(session);
-        SessionInfo.remove(session);
+        SESSION_TO_USERNAME .remove(session);
+        SESSION_INFO.remove(session);
     }
 
     public static void registerSession(Session session, int gameId, String username) {
-        SessionInfo.put(session, new ClientInfo(gameId, username));
+        SESSION_INFO.put(session, new ClientInfo(gameId, username));
     }
 
     public static void broadcastToGame(int gameID, ServerMessage message) {
@@ -35,7 +35,7 @@ public class ClientSessionManager {
     }
 
     public static void broadcastToGame(int gameID, ServerMessage message, Session except) {
-        for (Session s : GameSessions.getOrDefault(gameID, Set.of())) {
+        for (Session s : GAME_SESSIONS.getOrDefault(gameID, Set.of())) {
             if (!s.equals(except)) {
                 WebSocketHandler.sendToSession(s, message);
             }
@@ -44,6 +44,6 @@ public class ClientSessionManager {
 
 
     public static String getUsername(Session session) {
-        return SessionToUsername.get(session);
+        return SESSION_TO_USERNAME .get(session);
     }
 }
