@@ -1,11 +1,13 @@
 package server.websocket;
 
+import chess.ChessGame;
 import org.eclipse.jetty.websocket.api.Session;
 import websocket.messages.ServerMessage;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 public class ClientSessionManager {
     private static final Map<Integer, Set<Session>> gameSessions = new ConcurrentHashMap<>();

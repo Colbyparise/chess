@@ -9,16 +9,20 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.net.http.WebSocket.Listener;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class ClientSender implements Listener {
     private final Gson gson = new Gson();
     private WebSocket webSocket;
     private final ServerMessageHandler handler;
+    private UserGameCommand connectCommand;
 
     public ClientSender(ServerMessageHandler handler) {
         this.handler = handler;
     }
+
+    private final CompletableFuture<Void> connectionReady = new CompletableFuture<>();
 
     public void connect(String uri, UserGameCommand connectCommand) {
         HttpClient.newHttpClient().newWebSocketBuilder()
@@ -26,9 +30,17 @@ public class ClientSender implements Listener {
                 .thenAccept(ws -> {
                     this.webSocket = ws;
                     System.out.println("Connected to WebSocket");
-                    sendCommand(connectCommand); // Send CONNECT immediately after connection
+                    connectionReady.complete(null);
+
+                    sendCommand(connectCommand);
+                })
+                .exceptionally(ex -> {
+                    System.err.println("WebSocket connection failed: " + ex.getMessage());
+                    connectionReady.completeExceptionally(ex);
+                    return null;
                 });
     }
+
 
     public void sendCommand(UserGameCommand command) {
         if (webSocket == null) {
@@ -41,8 +53,17 @@ public class ClientSender implements Listener {
 
     @Override
     public void onOpen(WebSocket webSocket) {
-        Listener.super.onOpen(webSocket);
-    }
+        this.webSocket = webSocket;
+        System.out.println("WebSocket opened");
+        connectionReady.complete(null);
+
+
+        if (connectCommand != null) {
+            sendCommand(connectCommand);
+            connectCommand = null;
+        }
+        }
+
 
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {

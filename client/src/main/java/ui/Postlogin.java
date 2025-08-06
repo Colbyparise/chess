@@ -18,11 +18,13 @@ public class Postlogin {
     private final ServerFacade server;
     private final String authToken;
     private final Map<Integer, GameData> gameNumberMap = new HashMap<>();
+    private final int port;
 
-    public Postlogin(Scanner scanner, ServerFacade server, String authToken) {
+    public Postlogin(Scanner scanner, ServerFacade server, String authToken, int port) {
         this.scanner = scanner;
         this.server = server;
         this.authToken = authToken;
+        this.port = port;
     }
 
     public void run() {
@@ -123,7 +125,8 @@ public class Postlogin {
                     game.gameID(),
                     false, // not an observer
                     color,
-                    authToken
+                    authToken,
+                    port
             );
             gameplay.run();
         } catch (Exception e) {
@@ -154,7 +157,8 @@ public class Postlogin {
                 game.gameID(),
                 true, // observer
                 null,
-                authToken
+                authToken,
+                port
         );
         gameplay.run();
     }

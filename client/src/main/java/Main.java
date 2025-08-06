@@ -29,7 +29,7 @@ public class Main {
                 break;
             }
 
-            Postlogin postlogin = new Postlogin(scanner, server, auth.authToken());
+            Postlogin postlogin = new Postlogin(scanner, server, auth.authToken(), port);
             postlogin.run(); // this handles logout or quit
         }
 

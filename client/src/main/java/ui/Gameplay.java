@@ -27,8 +27,9 @@ public class Gameplay implements ServerMessageHandler {
     private ChessGame currentGame;
     private final ClientSender sender;
     private final ServerFacade server;
+    private final int port;
 
-    public Gameplay(Scanner scanner, ServerFacade server, int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken) {
+    public Gameplay(Scanner scanner, ServerFacade server, int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken, int port) {
         this.scanner = scanner;
         this.server = server;
         this.gameId = gameId;
@@ -36,12 +37,13 @@ public class Gameplay implements ServerMessageHandler {
         this.playerColor = playerColor;
         this.authToken = authToken;
         this.sender = new ClientSender(this);
+        this.port = port;
     }
 
     public void run() {
         System.out.println("Connecting to game " + gameId + "...");
 
-        sender.connect("ws://localhost:8080/ws", new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameId));
+        sender.connect("ws://localhost:" + port + "/ws", new UserGameCommand(UserGameCommand.CommandType.CONNECT, authToken, gameId));
 
         while (true) {
             System.out.print("[IN_GAME] >>> ");
