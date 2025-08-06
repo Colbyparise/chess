@@ -29,7 +29,8 @@ public class Gameplay implements ServerMessageHandler {
     private final ServerFacade server;
     private final int port;
 
-    public Gameplay(Scanner scanner, ServerFacade server, int gameId, boolean isObserver, ChessGame.TeamColor playerColor, String authToken, int port) {
+    public Gameplay(Scanner scanner, ServerFacade server, int gameId, boolean isObserver,
+                    ChessGame.TeamColor playerColor, String authToken, int port) {
         this.scanner = scanner;
         this.server = server;
         this.gameId = gameId;
@@ -48,7 +49,9 @@ public class Gameplay implements ServerMessageHandler {
         while (true) {
             System.out.print("[IN_GAME] >>> ");
             String input = scanner.nextLine().trim();
-            if (input.isEmpty()) continue;
+            if (input.isEmpty()){
+                continue;
+            }
 
             String[] parts = input.split("\\s+");
             String command = parts[0].toLowerCase();
@@ -90,7 +93,9 @@ public class Gameplay implements ServerMessageHandler {
 
         ChessPosition from = parsePosition(parts[1]);
         ChessPosition to = parsePosition(parts[2]);
-        if (from == null || to == null) return;
+        if (from == null || to == null) {
+            return;
+        }
 
         sender.sendCommand(new MakeMove(authToken, gameId, new ChessMove(from, to, null)));
     }
@@ -113,7 +118,9 @@ public class Gameplay implements ServerMessageHandler {
         }
 
         ChessPosition pos = parsePosition(parts[1]);
-        if (pos == null || currentGame == null) return;
+        if (pos == null || currentGame == null) {
+            return;
+        }
 
         ChessBoard board = currentGame.getBoard();
         Collection<ChessMove> legalMoves = board.getPiece(pos).pieceMoves(board, pos);

@@ -34,7 +34,7 @@ public class Postlogin {
             while (true) {
                 System.out.print("[LOGGED_IN] >>> ");
                 String input = scanner.nextLine().trim();
-                if (input.isEmpty()) continue;
+                if (input.isEmpty()) {continue; }
 
                 String[] parts = input.split("\\s+");
                 String command = parts[0].toLowerCase();
@@ -51,7 +51,7 @@ public class Postlogin {
                 }
             }
         } catch (ExitPostLogin ignored) {
-            // Return to prelogin
+
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -104,13 +104,19 @@ public class Postlogin {
         }
 
         int gameNumber = parseGameNumber(parts[1]);
-        if (gameNumber == -1) return;
+        if (gameNumber == -1) {
+            return;
+        }
 
         GameData game = getGameFromNumber(gameNumber);
-        if (game == null) return;
+        if (game == null) {
+            return;
+        }
 
         ChessGame.TeamColor color = parseColor(parts[2]);
-        if (color == null) return;
+        if (color == null) {
+            return;
+        }
 
         try {
             server.joinGame(game.gameID(), color, authToken);
@@ -130,7 +136,6 @@ public class Postlogin {
             );
             gameplay.run();
         } catch (Exception e) {
-            // Print the error, but don't exit the postlogin loop
             System.out.println("Error: " + e.getMessage());
         }
     }
@@ -141,10 +146,14 @@ public class Postlogin {
         }
 
         int gameNumber = parseGameNumber(parts[1]);
-        if (gameNumber == -1) return;
+        if (gameNumber == -1) {
+            return;
+        }
 
         GameData game = getGameFromNumber(gameNumber);
-        if (game == null) return;
+        if (game == null) {
+            return;
+        }
 
         server.observeGame(game.gameID(), authToken);
         System.out.println("Observing game '" + game.gameName() + "'.");

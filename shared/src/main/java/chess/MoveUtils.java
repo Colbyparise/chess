@@ -8,12 +8,6 @@ public class MoveUtils {
     public static boolean onBoard(int row, int col) {
         return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
-
-    public static boolean isOpponent(ChessBoard board, ChessPosition pos, ChessGame.TeamColor team) {
-        ChessPiece target = board.getPiece(pos);
-        return target != null && board.getColor(pos) != team;
-    }
-
     public static Set<ChessMove> generateDirectionalMoves(ChessBoard board, ChessPosition from,
                                                           int[][] directions, ChessGame.TeamColor team) {
         Set<ChessMove> legalMoves = new HashSet<>();

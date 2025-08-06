@@ -21,7 +21,9 @@ public class Prelogin {
         while (true) {
             System.out.print("[LOGGED_OUT] >>> ");
             String input = scanner.nextLine().trim();
-            if (input.isEmpty()) continue;
+            if (input.isEmpty()) {
+                continue;
+            }
 
             String[] parts = input.split("\\s+");
             String command = parts[0].toLowerCase();

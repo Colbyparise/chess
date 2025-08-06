@@ -39,7 +39,9 @@ public class PawnMovesCalculator implements PieceMovesCalculator {
         for (int dCol = -1; dCol <= 1; dCol += 2) {
             int targetCol = col + dCol;
             int targetRow = row + forward;
-            if (!MoveUtils.onBoard(targetRow, targetCol)) continue;
+            if (!MoveUtils.onBoard(targetRow, targetCol)){
+                continue;
+            }
 
             ChessPosition diag = new ChessPosition(targetRow, targetCol);
             if (board.getPiece(diag) != null && board.getColor(diag) != team) {

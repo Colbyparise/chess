@@ -18,7 +18,7 @@ import websocket.messages.ServerMessage;
 
 public class GameCommandProcessor {
 
-    private static final Gson gson = new Gson();
+    private static final Gson Gson = new Gson();
     private final UserDAO userDAO;
     private final AuthDAO authDAO;
     private final GameDAO gameDAO;

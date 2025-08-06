@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebSocket
 public class WebSocketHandler {
 
-    private static final ConcurrentHashMap<Session, String> clients = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Session, String> Clients = new ConcurrentHashMap<>();
     private static GameCommandProcessor processor;
 
     public static void init(GameCommandProcessor commandProcessor) {
@@ -26,7 +26,7 @@ public class WebSocketHandler {
     @OnWebSocketConnect
     public void onConnect(Session session) {
         System.out.println("WebSocket connected: " + session.getRemoteAddress());
-        clients.put(session, "UNASSIGNED"); // You can map to authToken or gameId
+        Clients.put(session, "UNASSIGNED"); // You can map to authToken or gameId
     }
 
     @OnWebSocketMessage
@@ -59,7 +59,7 @@ public class WebSocketHandler {
     @OnWebSocketClose
     public void onClose(Session session, int statusCode, String reason) {
         System.out.println("WebSocket closed: " + reason);
-        clients.remove(session);
+        Clients.remove(session);
     }
 
     @OnWebSocketError
