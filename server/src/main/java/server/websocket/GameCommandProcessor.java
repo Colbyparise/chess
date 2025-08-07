@@ -2,6 +2,8 @@ package server.websocket;
 
 import chess.ChessGame;
 import chess.ChessMove;
+import chess.ChessPosition;
+import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
@@ -15,6 +17,8 @@ import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGame;
 import websocket.messages.Notification;
 import websocket.messages.ServerMessage;
+import com.google.gson.annotations.SerializedName;
+
 
 public class GameCommandProcessor {
 
@@ -84,61 +88,82 @@ public class GameCommandProcessor {
 
 
     public void handleMakeMove(UserGameCommand command, Session session) {
-            try {
-                // Check type safely
-                if (!(command instanceof MakeMove moveCommand)) {
-                    WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid move command."));
-                    return;
-                }
-
-                AuthData auth = authDAO.getAuth(command.getAuthToken());
-                if (auth == null) {
-                    WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid auth token."));
-                    return;
-                }
-
-                String username = auth.username();
-                GameData gameData = gameDAO.getGame(command.getGameID());
-                ChessGame game = gameData.game();
-
-                if (game.isGameOver()) {
-                    WebSocketHandler.sendToSession(session, new ErrorMessage("The game is already over."));
-                    return;
-                }
-
-                ChessGame.TeamColor currentTurn = game.getTeamTurn();
-                ChessGame.TeamColor playerColor = getPlayerColor(gameData, username);
-
-                if (playerColor == null) {
-                    WebSocketHandler.sendToSession(session, new ErrorMessage("You are not a player in this game."));
-                    return;
-                }
-
-                if (playerColor != currentTurn) {
-                    WebSocketHandler.sendToSession(session, new ErrorMessage("It's not your turn."));
-                    return;
-                }
-
-                ChessMove move = moveCommand.getMove();
-                game.makeMove(move);
-                gameDAO.updateGame(gameData);
-
-
-                ServerMessage load = new LoadGame(game);
-                ClientSessionManager.broadcastToGame(command.getGameID(), load);
-
-                String moveDesc = String.format("%s moved from %s to %s",
-                        username, move.getStartPosition(), move.getEndPosition());
-
-                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveDesc), session);
-
-            } catch (Exception e) {
-                WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
+        try {
+            if (!(command instanceof MakeMove moveCommand)) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid move command."));
+                return;
             }
+
+            AuthData auth = authDAO.getAuth(command.getAuthToken());
+            if (auth == null) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid auth token."));
+                return;
+            }
+
+            String username = auth.username();
+            GameData gameData = gameDAO.getGame(command.getGameID());
+            ChessGame game = gameData.game();
+
+            if (game.isGameOver()) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("The game is already over."));
+                return;
+            }
+
+            ChessGame.TeamColor currentTurn = game.getTeamTurn();
+            ChessGame.TeamColor playerColor = getPlayerColor(gameData, username);
+
+            if (playerColor == null) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("You are not a player in this game."));
+                return;
+            }
+
+            if (playerColor != currentTurn) {
+                WebSocketHandler.sendToSession(session, new ErrorMessage("It's not your turn."));
+                return;
+            }
+
+            ChessMove move = moveCommand.getMove();
+
+            game.makeMove(move);
+            gameDAO.updateGame(new GameData(
+                    command.getGameID(),
+                    gameData.whiteUsername(),
+                    gameData.blackUsername(),
+                    gameData.gameName(),
+                    game // ← updated game object
+            ));
+
+            ServerMessage load = new LoadGame(game);
+            ClientSessionManager.broadcastToGame(command.getGameID(), load);
+
+            String moveDesc = String.format("%s moved from %s to %s",
+                    username, formatPos(move.getStartPosition()), formatPos(move.getEndPosition()));
+            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveDesc));
+
+            ChessGame.TeamColor opponent = (playerColor == ChessGame.TeamColor.WHITE)
+                    ? ChessGame.TeamColor.BLACK
+                    : ChessGame.TeamColor.WHITE;
+
+            if (game.isInCheckmate(opponent)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Checkmate!"));
+            } else if (game.isInCheck(opponent)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Check!"));
+            }
+
+        } catch (InvalidMoveException e) {
+            WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid move: " + e.getMessage()));
+        } catch (Exception e) {
+            WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
         }
+    }
+
+    private String formatPos(ChessPosition pos) {
+        char col = (char) ('a' + pos.getColumn() - 1);
+        return String.format("%c%d", col, pos.getRow());
+    }
 
 
-        private ChessGame.TeamColor getPlayerColor(GameData gameData, String username) {
+    private ChessGame.TeamColor getPlayerColor(GameData gameData, String username) {
         if (username.equals(gameData.whiteUsername())) {
             return ChessGame.TeamColor.WHITE;
         } else if (username.equals(gameData.blackUsername())) {

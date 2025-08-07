@@ -1,10 +1,7 @@
 package ui;
 
-import chess.ChessBoard;
-import chess.ChessGame;
-import chess.ChessMove;
-import chess.ChessPosition;
-import client.ClientSender;
+import chess.*;
+import client.WebSocketFacade;
 import client.ServerFacade;
 import client.ServerMessageHandler;
 import websocket.commands.MakeMove;
@@ -25,7 +22,7 @@ public class Gameplay implements ServerMessageHandler {
     private final ChessGame.TeamColor playerColor;
     private final String authToken;
     private ChessGame currentGame;
-    private final ClientSender sender;
+    private final WebSocketFacade sender;
     private final ServerFacade server;
     private final int port;
 
@@ -37,7 +34,7 @@ public class Gameplay implements ServerMessageHandler {
         this.isObserver = isObserver;
         this.playerColor = playerColor;
         this.authToken = authToken;
-        this.sender = new ClientSender(this);
+        this.sender = new WebSocketFacade(this);
         this.port = port;
     }
 
@@ -49,7 +46,7 @@ public class Gameplay implements ServerMessageHandler {
         while (true) {
             System.out.print("[IN_GAME] >>> ");
             String input = scanner.nextLine().trim();
-            if (input.isEmpty()){
+            if (input.isEmpty()) {
                 continue;
             }
 
@@ -77,13 +74,15 @@ public class Gameplay implements ServerMessageHandler {
     }
 
     private void drawBoard() {
-        if (currentGame == null) {
-            System.out.println("No game state available.");
-            return;
+        try {
+            ChessBoard board = server.getGameBoard(gameId, authToken);  // Fix here
+            boolean whiteOnBottom = isObserver || playerColor == ChessGame.TeamColor.WHITE;
+            new ChessBoardDrawer(board).print(whiteOnBottom);
+        } catch (Exception e) {
+            System.out.println("Could not redraw board: " + e.getMessage());
         }
-        boolean whiteOnBottom = isObserver || playerColor == ChessGame.TeamColor.WHITE;
-        new ChessBoardDrawer(currentGame.getBoard()).print(whiteOnBottom);
     }
+
 
     private void handleMove(String[] parts) {
         if (parts.length != 3) {
@@ -98,6 +97,7 @@ public class Gameplay implements ServerMessageHandler {
         }
 
         sender.sendCommand(new MakeMove(authToken, gameId, new ChessMove(from, to, null)));
+
     }
 
     private void handleResign() {
@@ -118,13 +118,23 @@ public class Gameplay implements ServerMessageHandler {
         }
 
         ChessPosition pos = parsePosition(parts[1]);
-        if (pos == null || currentGame == null) {
-            return;
-        }
+        if (pos == null) return;
 
-        ChessBoard board = currentGame.getBoard();
-        Collection<ChessMove> legalMoves = board.getPiece(pos).pieceMoves(board, pos);
-        new ChessBoardDrawer(board).printWithHighlights(pos, legalMoves);
+        try {
+            ChessBoard board = server.getGameBoard(gameId, authToken);
+            ChessPiece piece = board.getPiece(pos);
+
+            if (piece == null) {
+                System.out.println("No piece at that position.");
+                return;
+            }
+
+            Collection<ChessMove> legalMoves = piece.pieceMoves(board, pos);
+            new ChessBoardDrawer(board).printWithHighlights(pos, legalMoves);
+
+        } catch (Exception e) {
+            System.out.println("Error fetching board or piece: " + e.getMessage());
+        }
     }
 
     private ChessPosition parsePosition(String pos) {
@@ -160,10 +170,12 @@ public class Gameplay implements ServerMessageHandler {
         switch (message.getServerMessageType()) {
             case LOAD_GAME -> {
                 this.currentGame = ((LoadGame) message).getGame();
-                drawBoard();
+                ChessBoard board = this.currentGame.getBoard();
+                boolean whiteOnBottom = isObserver || playerColor == ChessGame.TeamColor.WHITE;
+                new ChessBoardDrawer(board).print(whiteOnBottom);
             }
-            case ERROR -> System.out.println(((ErrorMessage) message).getMessage());
             case NOTIFICATION -> System.out.println(((Notification) message).getMessage());
+            case ERROR -> System.out.println("Error: " + ((ErrorMessage) message).getMessage());
         }
     }
 }

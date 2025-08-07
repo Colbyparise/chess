@@ -2,7 +2,12 @@ package client;
 
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import websocket.commands.UserGameCommand;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGame;
+import websocket.messages.Notification;
 import websocket.messages.ServerMessage;
 
 import java.net.URI;
@@ -12,13 +17,13 @@ import java.net.http.WebSocket.Listener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class ClientSender implements Listener {
+public class WebSocketFacade implements Listener {
     private final Gson gson = new Gson();
     private WebSocket webSocket;
     private final ServerMessageHandler handler;
     private UserGameCommand connectCommand;
 
-    public ClientSender(ServerMessageHandler handler) {
+    public WebSocketFacade(ServerMessageHandler handler) {
         this.handler = handler;
     }
 
@@ -29,7 +34,6 @@ public class ClientSender implements Listener {
                 .buildAsync(URI.create(uri), this)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
-                    System.out.println("Connected to WebSocket");
                     connectionReady.complete(null);
 
                     sendCommand(connectCommand);
@@ -54,7 +58,6 @@ public class ClientSender implements Listener {
     @Override
     public void onOpen(WebSocket webSocket) {
         this.webSocket = webSocket;
-        System.out.println("WebSocket opened");
         connectionReady.complete(null);
 
 
@@ -67,10 +70,32 @@ public class ClientSender implements Listener {
 
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-        ServerMessage message = gson.fromJson(data.toString(), ServerMessage.class);
-        handler.handle(message);
+        String json = data.toString();
+
+        try {
+            JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
+            String type = jsonObject.get("serverMessageType").getAsString();
+
+            ServerMessage message = switch (type) {
+                case "LOAD_GAME" -> gson.fromJson(json, LoadGame.class);
+                case "ERROR" -> gson.fromJson(json, ErrorMessage.class);
+                case "NOTIFICATION" -> gson.fromJson(json, Notification.class);
+                default -> {
+                    System.err.println("Unknown message type: " + type);
+                    yield null;
+                }
+            };
+
+            if (message != null) {
+                handler.handle(message);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to parse WebSocket message: " + e.getMessage());
+        }
+
         return Listener.super.onText(webSocket, data, last);
     }
+
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
