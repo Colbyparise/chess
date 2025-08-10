@@ -36,11 +36,11 @@ public class ClientSessionManager {
 
     public static void broadcastToGame(int gameID, ServerMessage message, Session except) {
         for (Session s : GAME_SESSIONS.getOrDefault(gameID, Set.of())) {
-
+            if (!s.equals(except)) {
                 WebSocketHandler.sendToSession(s, message);
             }
         }
-
+    }
 
 
     public static String getUsername(Session session) {

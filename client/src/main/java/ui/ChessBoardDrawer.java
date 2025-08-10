@@ -69,7 +69,7 @@ public class ChessBoardDrawer {
 
     public void printWithHighlights(ChessPosition from, Collection<ChessMove> legalMoves) {
         Set<ChessPosition> highlights = legalMoves.stream()
-                .map(ChessMove::getEndPosition)
+                .map(ChessMove::endPosition)
                 .collect(Collectors.toSet());
 
         boolean whitePerspective = true; // optional: use parameter if needed

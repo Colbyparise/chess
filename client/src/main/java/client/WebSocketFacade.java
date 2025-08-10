@@ -19,24 +19,21 @@ import java.util.concurrent.CompletionStage;
 
 public class WebSocketFacade implements Listener {
     private final Gson gson = new Gson();
-    private WebSocket webSocket;
     private final ServerMessageHandler handler;
-    private UserGameCommand connectCommand;
+    private WebSocket webSocket;
+    private final CompletableFuture<Void> connectionReady = new CompletableFuture<>();
 
     public WebSocketFacade(ServerMessageHandler handler) {
         this.handler = handler;
     }
 
-    private final CompletableFuture<Void> connectionReady = new CompletableFuture<>();
-
-    public void connect(String uri, UserGameCommand connectCommand) {
+    public void connect(String uri, UserGameCommand initialCommand) {
         HttpClient.newHttpClient().newWebSocketBuilder()
                 .buildAsync(URI.create(uri), this)
                 .thenAccept(ws -> {
                     this.webSocket = ws;
                     connectionReady.complete(null);
-
-                    sendCommand(connectCommand);
+                    sendCommand(initialCommand);
                 })
                 .exceptionally(ex -> {
                     System.err.println("WebSocket connection failed: " + ex.getMessage());
@@ -45,10 +42,9 @@ public class WebSocketFacade implements Listener {
                 });
     }
 
-
     public void sendCommand(UserGameCommand command) {
         if (webSocket == null) {
-            System.err.println("WebSocket not connected.");
+            System.err.println("Cannot send command — WebSocket not connected.");
             return;
         }
         String json = gson.toJson(command);
@@ -59,43 +55,33 @@ public class WebSocketFacade implements Listener {
     public void onOpen(WebSocket webSocket) {
         this.webSocket = webSocket;
         connectionReady.complete(null);
-
-
-        if (connectCommand != null) {
-            sendCommand(connectCommand);
-            connectCommand = null;
-        }
-        }
-
+        Listener.super.onOpen(webSocket);
+    }
 
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-        String json = data.toString();
-
         try {
-            JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
-            String type = jsonObject.get("serverMessageType").getAsString();
+            JsonObject jsonObject = JsonParser.parseString(data.toString()).getAsJsonObject();
+            String typeStr = jsonObject.get("serverMessageType").getAsString();
 
-            ServerMessage message = switch (type) {
-                case "LOAD_GAME" -> gson.fromJson(json, LoadGame.class);
-                case "ERROR" -> gson.fromJson(json, ErrorMessage.class);
-                case "NOTIFICATION" -> gson.fromJson(json, Notification.class);
-                default -> {
-                    System.err.println("Unknown message type: " + type);
-                    yield null;
-                }
-            };
+            ServerMessage.ServerMessageType type = ServerMessage.ServerMessageType.valueOf(typeStr);
 
-            if (message != null) {
-                handler.handle(message);
+            ServerMessage message;
+
+            switch (type) {
+                case LOAD_GAME -> message = gson.fromJson(data.toString(), LoadGame.class);
+                case NOTIFICATION -> message = gson.fromJson(data.toString(), Notification.class);
+                case ERROR -> message = gson.fromJson(data.toString(), ErrorMessage.class);
+                default -> throw new IllegalArgumentException("Unknown message type: " + typeStr);
             }
-        } catch (Exception e) {
-            System.err.println("Failed to parse WebSocket message: " + e.getMessage());
-        }
 
+            handler.handle(message);
+
+        } catch (Exception e) {
+            System.err.println("Error parsing server message: " + e.getMessage());
+        }
         return Listener.super.onText(webSocket, data, last);
     }
-
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {

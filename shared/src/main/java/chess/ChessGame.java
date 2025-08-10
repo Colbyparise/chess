@@ -67,16 +67,16 @@ public class ChessGame {
         Collection<ChessMove> validMoves = new HashSet<>();
 
         for (ChessMove move : legalMove) {
-            ChessPiece target = chessBoard.getPiece(move.getEndPosition());
+            ChessPiece target = chessBoard.getPiece(move.endPosition());
 
             chessBoard.addPiece(startPosition, null);
-            chessBoard.addPiece(move.getEndPosition(), piece);
+            chessBoard.addPiece(move.endPosition(), piece);
 
             if (!isInCheck(piece.getTeamColor())) {
                 validMoves.add(move);
             }
 
-            chessBoard.addPiece(move.getEndPosition(), target);
+            chessBoard.addPiece(move.endPosition(), target);
             chessBoard.addPiece(startPosition, piece);
         }
         return validMoves;
@@ -91,13 +91,13 @@ public class ChessGame {
     //executes a move, if not legal throw InvalidMoveException
     //move is illegal if not valid for the piece at starting location, or not teams turn
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        ChessPiece piece = chessBoard.getPiece(move.getStartPosition());
+        ChessPiece piece = chessBoard.getPiece(move.startPosition());
 
         if (piece == null || piece.getTeamColor() != teamColor) {
             throw new InvalidMoveException("No valid piece / not your turn.");
         }
 
-        Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
+        Collection<ChessMove> validMoves = validMoves(move.startPosition());
 
         if (validMoves == null || !validMoves.contains(move)) {
             throw new InvalidMoveException("Invalid move.");
@@ -107,8 +107,8 @@ public class ChessGame {
                 ? new ChessPiece(teamColor, move.getPromotionPiece())
                 : piece;
 
-        chessBoard.addPiece(move.getEndPosition(), movedPiece);
-        chessBoard.addPiece(move.getStartPosition(), null);
+        chessBoard.addPiece(move.endPosition(), movedPiece);
+        chessBoard.addPiece(move.startPosition(), null);
 
         teamColor = (teamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
 
@@ -165,7 +165,7 @@ public class ChessGame {
 
     private boolean canThreaten(ChessPiece piece, ChessPosition from, ChessPosition target) {
         for (ChessMove move : piece.pieceMoves(chessBoard, from)) {
-            if (move.getEndPosition().equals(target)) {
+            if (move.endPosition().equals(target)) {
                 return true;
             }
         }

@@ -9,7 +9,7 @@ import java.util.Objects;
  * signature of the existing methods.
  */
 
-public record ChessMove(ChessPosition getStartPosition, ChessPosition getEndPosition,
+public record ChessMove(ChessPosition startPosition, ChessPosition endPosition,
                         ChessPiece.PieceType getPromotionPiece) {
 
 
@@ -17,14 +17,14 @@ public record ChessMove(ChessPosition getStartPosition, ChessPosition getEndPosi
      * @return ChessPosition of starting location
      */
     public ChessPosition startPosition() {
-        return getStartPosition;
+        return startPosition;
     }
 
     /**
      * @return ChessPosition of ending location
      */
     public ChessPosition endPosition() {
-        return getEndPosition;
+        return endPosition;
     }
 
     /**
@@ -42,7 +42,7 @@ public record ChessMove(ChessPosition getStartPosition, ChessPosition getEndPosi
     public String toString() {
         return String.format(
                 "ChessMove{startPosition = %s, endPosition=%s, promotionPiece=%s}",
-                getStartPosition, getEndPosition, getPromotionPiece
+                startPosition, endPosition, getPromotionPiece
         );
     }
 
@@ -54,9 +54,10 @@ public record ChessMove(ChessPosition getStartPosition, ChessPosition getEndPosi
         if (object == null || getClass() != object.getClass()) {
             return false;
         }
+
         ChessMove move = (ChessMove) object;
-        return Objects.equals(getStartPosition, move.getStartPosition)
-                && Objects.equals(getEndPosition, move.getEndPosition)
+        return Objects.equals(startPosition, move.startPosition)
+                && Objects.equals(endPosition, move.endPosition)
                 && getPromotionPiece == move.getPromotionPiece;
     }
 }

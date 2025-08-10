@@ -2,8 +2,6 @@ package server.websocket;
 
 import chess.ChessGame;
 import chess.ChessMove;
-import chess.ChessPosition;
-import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.GameDAO;
@@ -17,8 +15,6 @@ import websocket.messages.ErrorMessage;
 import websocket.messages.LoadGame;
 import websocket.messages.Notification;
 import websocket.messages.ServerMessage;
-import com.google.gson.annotations.SerializedName;
-
 
 public class GameCommandProcessor {
 
@@ -123,44 +119,31 @@ public class GameCommandProcessor {
             }
 
             ChessMove move = moveCommand.getMove();
-
             game.makeMove(move);
-            gameDAO.updateGame(new GameData(
-                    command.getGameID(),
+
+            // ✅ Create a *new* GameData with the updated game
+            GameData updatedGameData = new GameData(
+                    gameData.gameID(),
                     gameData.whiteUsername(),
                     gameData.blackUsername(),
                     gameData.gameName(),
-                    game // ← updated game object
-            ));
+                    game
+            );
+            gameDAO.updateGame(updatedGameData);
 
+            // Broadcast updated game state
             ServerMessage load = new LoadGame(game);
             ClientSessionManager.broadcastToGame(command.getGameID(), load);
 
             String moveDesc = String.format("%s moved from %s to %s",
-                    username, formatPos(move.getStartPosition()), formatPos(move.getEndPosition()));
-            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveDesc));
+                    username, move.startPosition(), move.endPosition());
+            ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveDesc), session);
 
-            ChessGame.TeamColor opponent = (playerColor == ChessGame.TeamColor.WHITE)
-                    ? ChessGame.TeamColor.BLACK
-                    : ChessGame.TeamColor.WHITE;
-
-            if (game.isInCheckmate(opponent)) {
-                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Checkmate!"));
-            } else if (game.isInCheck(opponent)) {
-                ClientSessionManager.broadcastToGame(command.getGameID(), new Notification("Check!"));
-            }
-
-        } catch (InvalidMoveException e) {
-            WebSocketHandler.sendToSession(session, new ErrorMessage("Invalid move: " + e.getMessage()));
         } catch (Exception e) {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
         }
     }
 
-    private String formatPos(ChessPosition pos) {
-        char col = (char) ('a' + pos.getColumn() - 1);
-        return String.format("%c%d", col, pos.getRow());
-    }
 
 
     private ChessGame.TeamColor getPlayerColor(GameData gameData, String username) {
