@@ -101,6 +101,7 @@ public class Gameplay implements ServerMessageHandler {
         this.currentGame = message.getGame();
 
         if (currentGame != null) {
+            System.out.println();
             ChessBoard board = currentGame.getBoard();
 
             boolean whiteOnBottom;

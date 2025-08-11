@@ -121,7 +121,6 @@ public class GameCommandProcessor {
             ChessMove move = moveCommand.getMove();
             game.makeMove(move);
 
-            // ✅ Create a *new* GameData with the updated game
             GameData updatedGameData = new GameData(
                     gameData.gameID(),
                     gameData.whiteUsername(),
@@ -138,6 +137,21 @@ public class GameCommandProcessor {
             String moveDesc = String.format("%s moved from %s to %s",
                     username, move.startPosition(), move.endPosition());
             ClientSessionManager.broadcastToGame(command.getGameID(), new Notification(moveDesc), session);
+
+            ChessGame.TeamColor opponentColor = (playerColor == ChessGame.TeamColor.WHITE)
+                    ? ChessGame.TeamColor.BLACK
+                    : ChessGame.TeamColor.WHITE;
+
+            if (game.isInCheckmate(opponentColor)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(),
+                        new Notification("Checkmate! " + playerColor + " wins."));
+            } else if (game.isInStalemate(opponentColor)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(),
+                        new Notification("Stalemate! The game is a draw."));
+            } else if (game.isInCheck(opponentColor)) {
+                ClientSessionManager.broadcastToGame(command.getGameID(),
+                        new Notification("Check!"));
+            }
 
         } catch (Exception e) {
             WebSocketHandler.sendToSession(session, new ErrorMessage("Error: " + e.getMessage()));
